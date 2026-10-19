@@ -133,7 +133,7 @@ olist-lakehouse/
 - Create: `.env`
 - Create: `README.md`
 
-- [ ] **Step 1: Viết tệp `.gitignore` chuẩn cho Data Engineering**
+- [x] **Step 1: Viết tệp `.gitignore` chuẩn cho Data Engineering**
   Chặn các tệp dữ liệu lớn, secrets, cache và virtualenv.
   ```bash
   cat << 'EOF' > .gitignore
@@ -161,7 +161,7 @@ olist-lakehouse/
   EOF
   ```
 
-- [ ] **Step 2: Viết tệp `.env.example`**
+- [x] **Step 2: Viết tệp `.env.example`**
   Định nghĩa toàn bộ cổng, user, password dùng chung cho các service.
   ```bash
   cat << 'EOF' > .env.example
@@ -193,17 +193,17 @@ olist-lakehouse/
   cp .env.example .env
   ```
 
-- [ ] **Step 3: Tạo cây thư mục dự án**
+- [x] **Step 3: Tạo cây thư mục dự án**
   ```bash
   mkdir -p data_prep/raw data_prep/processed etc/trino/catalog spark_jobs sql tests docs
   touch data_prep/raw/.gitkeep
   ```
 
-- [ ] **Step 4: Kiểm tra tính sẵn sàng của môi trường**
+- [x] **Step 4: Kiểm tra tính sẵn sàng của môi trường**
   Run: `ls -la && test -f .env && echo "ENV READY"`
   Expected output: `ENV READY`
 
-- [ ] **Step 5: Git commit mốc khởi tạo**
+- [x] **Step 5: Git commit mốc khởi tạo**
   Run:
   ```bash
   git init
