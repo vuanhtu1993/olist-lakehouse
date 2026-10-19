@@ -220,7 +220,7 @@ olist-lakehouse/
 - Create: `docker-compose.yml`
 - Create: `tests/test_storage_infra.py`
 
-- [ ] **Step 1: Viết failing test cho hạ tầng lưu trữ**
+- [x] **Step 1: Viết failing test cho hạ tầng lưu trữ**
   Tạo `tests/test_storage_infra.py` để kiểm tra kết nối Postgres và 4 buckets trên MinIO.
   ```python
   # tests/test_storage_infra.py
@@ -261,93 +261,22 @@ olist-lakehouse/
           assert b in bucket_names, f"Bucket {b} chưa được tạo trên MinIO!"
   ```
 
-- [ ] **Step 2: Chạy test và xác nhận FAIL (vì container chưa chạy)**
+- [x] **Step 2: Chạy test và xác nhận FAIL (vì container chưa chạy)**
   Run: `pytest tests/test_storage_infra.py -v`
   Expected output: `FAIL` (Connection refused)
 
-- [ ] **Step 3: Định nghĩa dịch vụ PostgreSQL và MinIO trong `docker-compose.yml`**
-  Cấu hình resource limits (RAM), healthcheck và service `mc-init` tự động khởi tạo 4 buckets.
-  ```yaml
-  # docker-compose.yml (Core Storage Part)
-  version: '3.8'
+- [x] **Step 3: Định nghĩa dịch vụ PostgreSQL và MinIO trong `docker-compose.yml`**
+  Cấu hình resource limits (RAM), healthcheck và script tự động khởi tạo 4 buckets.
 
-  services:
-    postgres:
-      image: postgres:16-alpine
-      container_name: olist_postgres
-      profiles: ["core", "full"]
-      environment:
-        POSTGRES_USER: ${POSTGRES_USER}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-        POSTGRES_DB: ${POSTGRES_DB}
-      ports:
-        - "${POSTGRES_PORT}:5432"
-      volumes:
-        - pgdata:/var/lib/postgresql/data
-      deploy:
-        resources:
-          limits:
-            memory: 512M
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-        interval: 5s
-        timeout: 5s
-        retries: 5
-
-    minio:
-      image: minio/minio:RELEASE.2024-05-10T01-41-38Z
-      container_name: olist_minio
-      profiles: ["core", "full"]
-      command: server /data --console-address ":9001"
-      environment:
-        MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-        MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      ports:
-        - "${MINIO_PORT}:9000"
-        - "${MINIO_CONSOLE_PORT}:9001"
-      volumes:
-        - miniodata:/data
-      deploy:
-        resources:
-          limits:
-            memory: 512M
-      healthcheck:
-        test: ["CMD", "mc", "ready", "local"]
-        interval: 5s
-        timeout: 5s
-        retries: 5
-
-    mc-init:
-      image: minio/mc:RELEASE.2024-05-09T17-04-24Z
-      container_name: olist_mc_init
-      profiles: ["core", "full"]
-      depends_on:
-        minio:
-          condition: service_healthy
-      entrypoint: >
-        /bin/sh -c "
-        mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-        mc mb --ignore-existing myminio/landing;
-        mc mb --ignore-existing myminio/bronze;
-        mc mb --ignore-existing myminio/silver;
-        mc mb --ignore-existing myminio/gold;
-        exit 0;
-        "
-
-  volumes:
-    pgdata:
-    miniodata:
-  ```
-
-- [ ] **Step 4: Khởi chạy Core Storage & Chạy lại test để PASS**
+- [x] **Step 4: Khởi chạy Core Storage & Chạy lại test để PASS**
   Run:
   ```bash
-  docker compose --profile core up -d postgres minio mc-init
+  docker compose --profile core up -d postgres minio
   pytest tests/test_storage_infra.py -v
   ```
   Expected output: `2 passed in ...`
 
-- [ ] **Step 5: Kiểm tra tính bền vững (Persistence Check - AC-INFRA-02)**
+- [x] **Step 5: Kiểm tra tính bền vững (Persistence Check - AC-INFRA-02)**
   Run:
   ```bash
   docker compose restart postgres minio
@@ -355,10 +284,10 @@ olist-lakehouse/
   ```
   Expected output: `2 passed` (Dữ liệu và cấu hình bucket không bị xóa khi container khởi động lại).
 
-- [ ] **Step 6: Git commit Task 2**
+- [x] **Step 6: Git commit Task 2**
   ```bash
-  git add docker-compose.yml tests/test_storage_infra.py
-  git commit -m "feat: add postgres and minio services with automatic 4-bucket initialization"
+  git add docker-compose.yml tests/test_storage_infra.py data_prep/init_minio_buckets.py
+  git commit -m "feat(infra): add postgresql 16 and minio s3 storage with 4-bucket medallion init (Task 02)"
   ```
 
 ---
