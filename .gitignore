@@ -1,0 +1,46 @@
+# =========================================================================
+# Environments & Secrets (NFR-01: Không lộ secrets trong Git)
+# =========================================================================
+.env
+*.env
+!.env.example
+
+# =========================================================================
+# Python & Caches
+# =========================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+.venv/
+venv/
+ENV/
+
+# =========================================================================
+# Data folders & Raw Datasets (Chỉ commit code & pipeline, không commit data)
+# =========================================================================
+Olist-dataset/
+data_prep/*.csv
+data_prep/raw/*.csv
+data_prep/processed/
+!data_prep/raw/.gitkeep
+
+# =========================================================================
+# Docker volumes local mount & Data persistence
+# =========================================================================
+.minio-data/
+.postgres-data/
+
+# =========================================================================
+# IDEs & Operating Systems
+# =========================================================================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+.worktrees/
