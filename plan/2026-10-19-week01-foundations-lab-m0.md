@@ -547,7 +547,7 @@ olist-lakehouse/
 - Create: `data_prep/split_batches.py`
 - Create: `tests/test_data_prep.py`
 
-- [ ] **Step 1: Viết test kiểm tra tệp dữ liệu Kaggle và dữ liệu PII sinh ra**
+- [x] **Step 1: Viết test kiểm tra tệp dữ liệu Kaggle và dữ liệu PII sinh ra**
   ```python
   # tests/test_data_prep.py
   import os
@@ -577,7 +577,7 @@ olist-lakehouse/
           assert os.path.isdir(batch_dir), f"Thiếu thư mục mẻ: {batch_dir}"
   ```
 
-- [ ] **Step 2: Sao chép 9 tệp CSV từ `Olist-dataset/` sang `data_prep/raw/`**
+- [x] **Step 2: Sao chép 9 tệp CSV từ `Olist-dataset/` sang `data_prep/raw/`**
   Run:
   ```bash
   cp Olist-dataset/*.csv data_prep/raw/
@@ -585,7 +585,7 @@ olist-lakehouse/
   ```
   Expected output: `1 passed`
 
-- [ ] **Step 3: Viết script `data_prep/gen_pii.py` dùng thư viện Faker**
+- [x] **Step 3: Viết script `data_prep/gen_pii.py` dùng thư viện Faker**
   ```python
   # data_prep/gen_pii.py
   import os
@@ -625,7 +625,7 @@ olist-lakehouse/
       generate_pii()
   ```
 
-- [ ] **Step 4: Viết script `data_prep/split_batches.py`**
+- [x] **Step 4: Viết script `data_prep/split_batches.py`**
   Cắt dữ liệu theo thời gian thành 8 batch (B0 đến B7) và thêm cột `updated_at`.
   ```python
   # data_prep/split_batches.py
@@ -671,7 +671,7 @@ olist-lakehouse/
       split_into_batches()
   ```
 
-- [ ] **Step 5: Thực thi sinh PII & Cắt batches, xác nhận toàn bộ test PASS**
+- [x] **Step 5: Thực thi sinh PII & Cắt batches, xác nhận toàn bộ test PASS**
   Run:
   ```bash
   python data_prep/gen_pii.py
@@ -680,7 +680,7 @@ olist-lakehouse/
   ```
   Expected output: `3 passed in ...`
 
-- [ ] **Step 6: Git commit Task 5**
+- [x] **Step 6: Git commit Task 5**
   ```bash
   git add data_prep/gen_pii.py data_prep/split_batches.py tests/test_data_prep.py
   git commit -m "feat: implement faker pii generation and historical batch slicing B0-B7"
