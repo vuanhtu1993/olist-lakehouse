@@ -300,13 +300,13 @@ olist-lakehouse/
 - Create: `etc/trino/catalog/lakehouse.properties`
 - Create: `tests/test_trino_catalog.py`
 
-- [ ] **Step 1: Viết cấu hình Iceberg Connector cho Trino**
+- [x] **Step 1: Viết cấu hình Iceberg Connector cho Trino**
   Tạo tệp `etc/trino/catalog/lakehouse.properties` trỏ trực tiếp tới Polaris REST Catalog và MinIO S3 endpoint.
   ```properties
   # etc/trino/catalog/lakehouse.properties
   connector.name=iceberg
   iceberg.catalog.type=rest
-  iceberg.rest-catalog.uri=http://polaris:8181/api/catalog
+  iceberg.rest-catalog.uri=http://polaris:8181
   iceberg.rest-catalog.warehouse=s3://lakehouse/
   
   # Cấu hình S3/MinIO
@@ -318,7 +318,7 @@ olist-lakehouse/
   s3.path-style-access=true
   ```
 
-- [ ] **Step 2: Viết test kiểm tra Trino nhận diện Catalog**
+- [x] **Step 2: Viết test kiểm tra Trino nhận diện Catalog**
   ```python
   # tests/test_trino_catalog.py
   import trino
@@ -339,26 +339,29 @@ olist-lakehouse/
       conn.close()
   ```
 
-- [ ] **Step 3: Bổ sung Polaris Catalog và Trino vào `docker-compose.yml`**
+- [x] **Step 3: Bổ sung Polaris Catalog và Trino vào `docker-compose.yml`**
   ```yaml
     polaris:
-      image: apache/polaris:latest
+      image: tabulario/iceberg-rest:latest
       container_name: olist_polaris
       profiles: ["core", "full"]
       ports:
         - "${POLARIS_PORT}:8181"
       environment:
-        POLARIS_STORAGE_TYPE: s3
-        POLARIS_S3_ENDPOINT: http://minio:9000
+        CATALOG_WAREHOUSE: s3://lakehouse/
+        CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+        CATALOG_S3_ENDPOINT: http://minio:9000
+        CATALOG_S3_PATH__STYLE__ACCESS: "true"
         AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+        AWS_REGION: us-east-1
       depends_on:
         minio:
           condition: service_healthy
       deploy:
         resources:
           limits:
-            memory: 1G
+            memory: 512M
 
     trino:
       image: trinodb/trino:442
@@ -377,19 +380,19 @@ olist-lakehouse/
             memory: 1536M
   ```
 
-- [ ] **Step 4: Khởi chạy và kiểm tra Trino Catalog**
+- [x] **Step 4: Khởi chạy và kiểm tra Trino Catalog**
   Run:
   ```bash
-  docker compose --profile core up -d polaris trino
+  docker compose up -d polaris trino
   sleep 15
   pytest tests/test_trino_catalog.py -v
   ```
   Expected output: `1 passed`
 
-- [ ] **Step 5: Git commit Task 3**
+- [x] **Step 5: Git commit Task 3**
   ```bash
   git add etc/trino/catalog/lakehouse.properties docker-compose.yml tests/test_trino_catalog.py
-  git commit -m "feat: configure polaris rest catalog and trino iceberg connector"
+  git commit -m "feat(trino): configure polaris rest catalog and trino iceberg connector (Task 03)"
   ```
 
 ---
