@@ -427,10 +427,21 @@ olist-lakehouse/
      ```
   2. Gõ lệnh tạo bảng phân vùng và chèn 2 dòng:
      ```sql
-     CREATE SCHEMA IF NOT EXISTS bronze;
-     CREATE TABLE bronze.lab3_demo (id VARCHAR, name VARCHAR, city VARCHAR) WITH (format = 'PARQUET', partitioning = ARRAY['city']);
-     INSERT INTO bronze.lab3_demo VALUES ('1', 'Anh Tu', 'Hanoi'), ('2', 'Junior DE', 'Saigon');
-     SELECT * FROM bronze.lab3_demo;
+     CREATE TABLE lakehouse.bronze.demo_customers (
+    id VARCHAR,
+    name VARCHAR,
+    city VARCHAR,
+    dob DATE
+    )
+    WITH (
+        format = 'PARQUET',
+        partitioning = ARRAY['city', 'year(dob)']
+    );
+    <!-- Insert data-->
+    INSERT INTO lakehouse.bronze.demo_customers VALUES 
+    ('c01', 'Anh Tu', 'Hanoi', DATE '1993-05-15'),
+    ('c02', 'Junior DE', 'Hanoi', DATE '1993-11-20'),
+    ('c03', 'Data Specialist', 'Saigon', DATE '2000-08-10');
      ```
   3. Mở [MinIO Console :9001](http://localhost:9001) vào bucket `lakehouse` -> `bronze/lab3_demo-.../`.
 * **Tiêu chuẩn đạt (Demo):** Tận mắt nhìn thấy thư mục `metadata/` (file `.metadata.json`, `.avro`) và thư mục `data/` được phân vùng theo `city=Hanoi/`, `city=Saigon/` chứa file Parquet.
@@ -444,7 +455,7 @@ olist-lakehouse/
 - Modify: `docker-compose.yml`
 - Create: `tests/test_spark_iceberg.py`
 
-- [ ] **Step 1: Viết test kiểm chứng Spark tương tác với Iceberg Catalog**
+- [x] **Step 1: Viết test kiểm chứng Spark tương tác với Iceberg Catalog**
   ```python
   # tests/test_spark_iceberg.py
   from pyspark.sql import SparkSession
@@ -453,18 +464,15 @@ olist-lakehouse/
       return SparkSession.builder \
           .appName("TestIcebergCatalog") \
           .master("local[2]") \
-          .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.0,org.apache.hadoop:hadoop-aws:3.3.4") \
+          .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.0,org.apache.iceberg:iceberg-aws-bundle:1.6.0") \
           .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions") \
           .config("spark.sql.catalog.lakehouse", "org.apache.iceberg.spark.SparkCatalog") \
           .config("spark.sql.catalog.lakehouse.type", "rest") \
-          .config("spark.sql.catalog.lakehouse.uri", "http://localhost:8181/api/catalog") \
+          .config("spark.sql.catalog.lakehouse.uri", "http://polaris:8181") \
+          .config("spark.sql.catalog.lakehouse.warehouse", "s3://lakehouse/") \
           .config("spark.sql.catalog.lakehouse.io-impl", "org.apache.iceberg.aws.s3.S3FileIO") \
-          .config("spark.sql.catalog.lakehouse.s3.endpoint", "http://localhost:9000") \
+          .config("spark.sql.catalog.lakehouse.s3.endpoint", "http://minio:9000") \
           .config("spark.sql.catalog.lakehouse.s3.path-style-access", "true") \
-          .config("spark.hadoop.fs.s3a.endpoint", "http://localhost:9000") \
-          .config("spark.hadoop.fs.s3a.access.key", "minioadmin") \
-          .config("spark.hadoop.fs.s3a.secret.key", "minioadmin") \
-          .config("spark.hadoop.fs.s3a.path.style.access", "true") \
           .getOrCreate()
 
   def test_spark_creates_bronze_namespace():
@@ -476,11 +484,11 @@ olist-lakehouse/
       spark.stop()
   ```
 
-- [ ] **Step 2: Chạy test và xác nhận Spark khởi tạo namespace thành công**
-  Run: `pytest tests/test_spark_iceberg.py -v`
+- [x] **Step 2: Chạy test và xác nhận Spark khởi tạo namespace thành công**
+  Run: `docker compose exec spark-notebook python3 -m pytest /home/jovyan/work/tests/test_spark_iceberg.py -v`
   Expected output: `1 passed`
 
-- [ ] **Step 3: Thêm Spark/Jupyter container vào `docker-compose.yml` (cho học viên dùng UI Web)**
+- [x] **Step 3: Thêm Spark/Jupyter container vào `docker-compose.yml` (cho học viên dùng UI Web)**
   ```yaml
     spark-notebook:
       image: jupyter/pyspark-notebook:spark-3.5.0
@@ -495,13 +503,14 @@ olist-lakehouse/
         - ./spark_jobs:/home/jovyan/work/spark_jobs
         - ./data_prep:/home/jovyan/work/data_prep
         - ./tests:/home/jovyan/work/tests
+        - ivy_cache:/home/jovyan/.ivy2
       deploy:
         resources:
           limits:
             memory: 2G
   ```
 
-- [ ] **Step 4: Khởi chạy container và kiểm tra**
+- [x] **Step 4: Khởi chạy container và kiểm tra**
   Run:
   ```bash
   docker compose --profile core up -d spark-notebook
@@ -509,10 +518,10 @@ olist-lakehouse/
   ```
   Expected output: Container ở trạng thái `Up`
 
-- [ ] **Step 5: Git commit Task 4**
+- [x] **Step 5: Git commit Task 4**
   ```bash
-  git add docker-compose.yml tests/test_spark_iceberg.py
-  git commit -m "feat: configure spark session with iceberg runtime and s3 file io"
+  git add docker-compose.yml tests/test_spark_iceberg.py plan/2026-10-19-week01-foundations-lab-m0.md
+  git commit -m "feat(spark): configure spark session with iceberg runtime and s3 file io (Task 04)"
   ```
 
 #### 🧪 Mini-Lab 4: Chiếc cầu nối Spark-Iceberg — Tạo Namespace & In Schema
