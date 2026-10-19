@@ -211,6 +211,18 @@ olist-lakehouse/
   git commit -m "feat: initial repository structure and environment configurations"
   ```
 
+#### 🧪 Mini-Lab 1: Thử nghiệm "Rò rỉ bí mật" & Kiểm tra lá chắn `.gitignore`
+* **Mục tiêu:** Học viên tự tay kiểm chứng khả năng bảo vệ secrets (`.env`) và ngăn chặn dữ liệu lớn (`*.csv`) lọt lên Git repository.
+* **Thao tác nhanh:**
+  ```bash
+  # 1. Tạo thử file secret giả và file CSV dữ liệu thô
+  touch .env.secret data_prep/raw/test_large_file.csv
+  # 2. Kiểm tra trạng thái Git
+  git status
+  ```
+* **Tiêu chuẩn đạt (Demo):** Git hoàn toàn không thấy 2 file trên (nằm trong danh sách ignored).
+* **Dọn dẹp:** `rm -f .env.secret data_prep/raw/test_large_file.csv`
+
 ---
 
 ### Task 2: Hạ tầng Lưu trữ & Cơ sở dữ liệu (PostgreSQL 16 & MinIO S3)
@@ -289,6 +301,17 @@ olist-lakehouse/
   git add docker-compose.yml tests/test_storage_infra.py data_prep/init_minio_buckets.py
   git commit -m "feat(infra): add postgresql 16 and minio s3 storage with 4-bucket medallion init (Task 02)"
   ```
+
+#### 🧪 Mini-Lab 2: Chạm tay vào Storage — Khám phá MinIO Console & Cloud Database
+* **Mục tiêu:** Xóa bỏ khái niệm "hộp đen", trực quan hóa Object Storage S3 và kiểm chứng database tác nghiệp.
+* **Thao tác nhanh:**
+  1. Mở trình duyệt vào MinIO Console: [http://localhost:9001](http://localhost:9001) (`minioadmin` / `minioadmin`).
+  2. Xác nhận nhìn thấy 5 bucket Medallion: `landing`, `bronze`, `silver`, `gold`, `lakehouse`.
+  3. Chạy test xác nhận kết nối Database và MinIO S3:
+     ```bash
+     pytest tests/test_storage_infra.py -v
+     ```
+* **Tiêu chuẩn đạt (Demo):** Test đạt `2 passed in < 1s`, học viên phân biệt được sự khác biệt giữa Database quan hệ (OLTP) và Object Storage (Data Lake).
 
 ---
 
@@ -395,6 +418,23 @@ olist-lakehouse/
   git commit -m "feat(trino): configure polaris rest catalog and trino iceberg connector (Task 03)"
   ```
 
+#### 🧪 Mini-Lab 3: Chiếc hộp ma thuật Iceberg — DDL, DML & "Soi kính hiển vi" Metadata
+* **Mục tiêu:** Chứng minh Trino không chỉ đọc dữ liệu mà có thể tạo bảng, ghi dữ liệu và sinh siêu dữ liệu Apache Iceberg trực tiếp lên MinIO S3.
+* **Thao tác nhanh:**
+  1. Mở Trino Interactive CLI:
+     ```bash
+     docker compose exec -it trino trino --catalog lakehouse
+     ```
+  2. Gõ lệnh tạo bảng phân vùng và chèn 2 dòng:
+     ```sql
+     CREATE SCHEMA IF NOT EXISTS bronze;
+     CREATE TABLE bronze.lab3_demo (id VARCHAR, name VARCHAR, city VARCHAR) WITH (format = 'PARQUET', partitioning = ARRAY['city']);
+     INSERT INTO bronze.lab3_demo VALUES ('1', 'Anh Tu', 'Hanoi'), ('2', 'Junior DE', 'Saigon');
+     SELECT * FROM bronze.lab3_demo;
+     ```
+  3. Mở [MinIO Console :9001](http://localhost:9001) vào bucket `lakehouse` -> `bronze/lab3_demo-.../`.
+* **Tiêu chuẩn đạt (Demo):** Tận mắt nhìn thấy thư mục `metadata/` (file `.metadata.json`, `.avro`) và thư mục `data/` được phân vùng theo `city=Hanoi/`, `city=Saigon/` chứa file Parquet.
+
 ---
 
 ### Task 4: Nền tảng Tính toán Phân tán (Apache Spark với Iceberg Runtime)
@@ -474,6 +514,19 @@ olist-lakehouse/
   git add docker-compose.yml tests/test_spark_iceberg.py
   git commit -m "feat: configure spark session with iceberg runtime and s3 file io"
   ```
+
+#### 🧪 Mini-Lab 4: Chiếc cầu nối Spark-Iceberg — Tạo Namespace & In Schema
+* **Mục tiêu:** Xác thực Apache Spark giao tiếp thành công với Iceberg REST Catalog và chia sẻ cùng một bản dữ liệu với Trino.
+* **Thao tác nhanh:**
+  1. Chạy PySpark test tạo namespace `lakehouse.bronze`:
+     ```bash
+     pytest tests/test_spark_iceberg.py -v
+     ```
+  2. Mở Trino CLI hoặc Python kiểm tra:
+     ```sql
+     SHOW SCHEMAS FROM lakehouse;
+     ```
+* **Tiêu chuẩn đạt (Demo):** Schema `bronze` do Spark tạo lập tức xuất hiện trong Trino `SHOW SCHEMAS`. Đây là bằng chứng sống động cho việc Storage-Compute Decoupling (2 engine độc lập cùng nhìn thấy 1 Catalog).
 
 ---
 
@@ -624,6 +677,22 @@ olist-lakehouse/
   git commit -m "feat: implement faker pii generation and historical batch slicing B0-B7"
   ```
 
+#### 🧪 Mini-Lab 5: Thám tử dữ liệu — Đối soát PII 1:1 & Phân bổ 8 Mẻ Dữ Liệu
+* **Mục tiêu:** Kiểm tra chất lượng dữ liệu giả lập (Synthetic Data) và hình dung trực quan về khái niệm Batch Timeline.
+* **Thao tác nhanh:**
+  Chạy lệnh Python one-liner phân tích mẻ dữ liệu:
+  ```bash
+  python3 -c "
+  import pandas as pd, glob
+  pii = pd.read_csv('data_prep/processed/customer_pii.csv')
+  print('✔ Tổng số khách hàng sinh PII giả:', len(pii))
+  for b in sorted(glob.glob('data_prep/processed/batch_B*')):
+      df = pd.read_csv(f'{b}/orders.csv')
+      print(f'  - Mẻ {b[-8:]}: {len(df):>5} đơn hàng (Từ {df.order_purchase_timestamp.min()[:10]} đến {df.order_purchase_timestamp.max()[:10]})')
+  "
+  ```
+* **Tiêu chuẩn đạt (Demo):** Học viên thấy số lượng PII khớp 100% với số `customer_unique_id` và các mẻ B0–B7 không bị gối đè thời gian lên nhau.
+
 ---
 
 ### Task 6: Nạp Dữ liệu Khởi đầu (Seed PostgreSQL với Batch B0 & Đặt CSV vào MinIO Landing)
@@ -718,6 +787,16 @@ olist-lakehouse/
   git add data_prep/seed_postgres.py tests/test_postgres_seeded.py
   git commit -m "feat: seed postgres database with batch b0 transactional records"
   ```
+
+#### 🧪 Mini-Lab 6: Khảo sát Hệ Thống Nguồn OLTP & MinIO Landing Trước Giờ G
+* **Mục tiêu:** Xác thực dữ liệu tác nghiệp đã sẵn sàng phục vụ bài toán trích xuất dữ liệu (Data Extraction).
+* **Thao tác nhanh:**
+  1. Chạy test xác nhận PostgreSQL đã seed mẻ B0:
+     ```bash
+     pytest tests/test_postgres_seeded.py -v
+     ```
+  2. Mở MinIO Console [http://localhost:9001](http://localhost:9001) vào bucket `landing/ref/`.
+* **Tiêu chuẩn đạt (Demo):** Thấy các bảng giao dịch `orders`, `order_items`, `customers` có hàng nghìn dòng trong PostgreSQL, và 2 file CSV tham chiếu đã nằm ngay ngắn trong `landing/ref/`.
 
 ---
 
@@ -826,6 +905,17 @@ olist-lakehouse/
   git commit -m "feat: implement end-to-end hello world pipeline from postgres to iceberg to trino"
   ```
 
+#### 🧪 Mini-Lab 7: Màn Trình Diễn E2E Tie-out — Đối Soát Số Dòng Lệch Bằng 0
+* **Mục tiêu:** Hoàn thành trọn vẹn Milestone M0: Dữ liệu chảy từ PostgreSQL OLTP -> Spark Ingestion -> Iceberg Table trên MinIO -> Trino Query kiểm chứng.
+* **Thao tác nhanh:**
+  Chạy bộ test đối soát (Reconciliation Tie-out):
+  ```bash
+  pytest tests/test_e2e_smoke.py -v -s
+  ```
+* **Tiêu chuẩn đạt (Demo):** Terminal in ra thông số:
+  `PostgreSQL Count: X | Trino Iceberg Count: X | Discrepancy: 0`
+  Học viên chứng minh được dữ liệu trích xuất từ database tác nghiệp đưa vào Lakehouse đạt tính toàn vẹn 100%.
+
 ---
 
 ### Task 8: Bài Tập SQL Thực Hành & Phân Tích Chuyên Sâu (Sư Phạm & Tư Duy Phản Biện)
@@ -929,6 +1019,18 @@ olist-lakehouse/
   git commit -m "docs: add 5 pedagogical daily sql queries with technical why explanations"
   ```
 
+#### 🧪 Mini-Lab 8: Truy Tìm Sự Thật — Giải Mã Hiện Tượng Data Skew & Sai Số LTV
+* **Mục tiêu:** Giúp học viên hiểu sâu sắc về nghiệp vụ E-commerce và tư duy mô hình hóa dữ liệu (Data Modeling).
+* **Thao tác nhanh:**
+  Chạy 5 câu truy vấn SQL thực hành:
+  ```bash
+  docker compose exec -T postgres psql -U olist_admin -d oltp_olist -f - < sql/week01_daily_queries.sql
+  # (Hoặc chạy trực tiếp trên Supabase SQL Editor)
+  ```
+* **Tiêu chuẩn đạt (Demo):** Học viên chỉ ra được:
+  1. Vì sao không được dùng `customer_id` để tính LTV (do 1 khách hàng có nhiều `customer_id`).
+  2. Bang São Paulo (SP) chiếm tỷ trọng áp đảo > 40% (hiện tượng Data Skew cần lưu ý khi partition bảng sau này).
+
 ---
 
 ### Task 9: Bộ Tài Liệu Phỏng Vấn Kỹ Thuật (Interview Q&A Cheatsheet)
@@ -973,6 +1075,13 @@ olist-lakehouse/
   git add docs/week01_interview_prep.md
   git commit -m "docs: add comprehensive week 1 interview q&a cheatsheet"
   ```
+
+#### 🧪 Mini-Lab 9: Thử Thách Phỏng Vấn Nhanh 90 Giây (Elevator Pitch)
+* **Mục tiêu:** Rèn luyện kỹ năng trình bày logic, chuyên nghiệp và tự tin trước nhà tuyển dụng Data Engineer.
+* **Thao tác nhanh:**
+  Học viên tự quay video hoặc thuyết trình trước nhóm câu hỏi:
+  > *"Tại sao bạn lại chọn kiến trúc Data Lakehouse với Apache Iceberg cho dự án Olist thay vì chỉ dùng PostgreSQL hay lưu file Parquet thuần túy?"*
+* **Tiêu chuẩn đạt (Demo):** Trả lời trôi chảy trong 90 giây nêu bật được 3 ý: Chi phí lưu trữ rẻ (MinIO), Đảm bảo giao dịch ACID và Time Travel (Iceberg), Tách rời Compute (Spark/Trino).
 
 ---
 
@@ -1032,6 +1141,16 @@ olist-lakehouse/
   git add tests/gate_g1_check.sh
   git commit -m "test: add automated gate g1 verification script"
   ```
+
+#### 🧪 Mini-Lab 10: Diễn Tập "Thảm Họa Sập Nguồn" (Chaos Restart Drill) & Tự Chấm Gate G1
+* **Mục tiêu:** Chứng minh hệ thống bền vững, không mất dữ liệu và chính thức vượt qua Cổng Gate G1 của Tuần 1.
+* **Thao tác nhanh:**
+  Chạy script tự chấm điểm:
+  ```bash
+  bash tests/gate_g1_check.sh
+  ```
+* **Tiêu chuẩn đạt (Demo):** Script tự động hạ toàn bộ container, bật lại từ đầu, chạy 5 bộ test tự động và in thông báo chúc mừng:
+  `🎉 XUẤT SẮC! TOÀN BỘ TIÊU CHÍ CỔNG GATE G1 ĐÃ ĐẠT ĐIỂM 100%`.
 
 ---
 
