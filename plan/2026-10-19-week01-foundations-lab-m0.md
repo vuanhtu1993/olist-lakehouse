@@ -711,15 +711,23 @@ olist-lakehouse/
 - Create: `data_prep/seed_postgres.py`
 - Create: `tests/test_postgres_seeded.py`
 
-- [ ] **Step 1: Viết test kiểm tra số lượng bản ghi đã được nạp vào PostgreSQL**
+- [x] **Step 1: Viết test kiểm tra số lượng bản ghi đã được nạp vào PostgreSQL**
   ```python
   # tests/test_postgres_seeded.py
+  import os
   import psycopg2
+  from dotenv import load_dotenv
+
+  load_dotenv()
 
   def test_batch_b0_seeded():
       """Kiểm tra 5 bảng transactional trong PostgreSQL có dữ liệu mẻ B0"""
       conn = psycopg2.connect(
-          host="localhost", port=5432, user="olist_admin", password="olist_password", dbname="oltp_olist"
+          host=os.getenv("POSTGRES_HOST", "localhost"),
+          port=int(os.getenv("POSTGRES_PORT", 5432)),
+          user=os.getenv("POSTGRES_USER", "postgres"),
+          password=os.getenv("POSTGRES_PASSWORD", "olist-lakehouse"),
+          dbname=os.getenv("POSTGRES_DB", "postgres")
       )
       cur = conn.cursor()
       tables = ["orders", "order_items", "order_payments", "customers", "customer_pii"]
@@ -730,50 +738,19 @@ olist-lakehouse/
       conn.close()
   ```
 
-- [ ] **Step 2: Viết script `data_prep/seed_postgres.py`**
+- [x] **Step 2: Viết script `data_prep/seed_postgres.py`**
   ```python
   # data_prep/seed_postgres.py
+  import os
   import pandas as pd
-  from sqlalchemy import create_engine
+  from sqlalchemy import create_engine, text
+  from dotenv import load_dotenv
 
-  def seed_database():
-      engine = create_engine("postgresql://olist_admin:olist_password@localhost:5432/oltp_olist")
-      
-      print("Seeding Batch B0 into PostgreSQL...")
-      # 1. Orders (B0)
-      df_orders = pd.read_csv("data_prep/processed/batch_B0/orders.csv")
-      df_orders.to_sql("orders", engine, if_exists="replace", index=False)
-      print(f"- Seeded {len(df_orders)} records into orders")
-
-      # 2. Customers
-      df_cust = pd.read_csv("data_prep/raw/olist_customers_dataset.csv")
-      df_cust.to_sql("customers", engine, if_exists="replace", index=False)
-      print(f"- Seeded {len(df_cust)} records into customers")
-
-      # 3. Customer PII
-      df_pii = pd.read_csv("data_prep/processed/customer_pii.csv")
-      df_pii.to_sql("customer_pii", engine, if_exists="replace", index=False)
-      print(f"- Seeded {len(df_pii)} records into customer_pii")
-
-      # 4. Order items (filter theo orders của B0)
-      df_items = pd.read_csv("data_prep/raw/olist_order_items_dataset.csv")
-      df_items_b0 = df_items[df_items['order_id'].isin(df_orders['order_id'])]
-      df_items_b0.to_sql("order_items", engine, if_exists="replace", index=False)
-      print(f"- Seeded {len(df_items_b0)} records into order_items")
-
-      # 5. Order payments (filter theo orders của B0)
-      df_payments = pd.read_csv("data_prep/raw/olist_order_payments_dataset.csv")
-      df_payments_b0 = df_payments[df_payments['order_id'].isin(df_orders['order_id'])]
-      df_payments_b0.to_sql("order_payments", engine, if_exists="replace", index=False)
-      print(f"- Seeded {len(df_payments_b0)} records into order_payments")
-
-      print("PostgreSQL Database seeding for B0 complete!")
-
-  if __name__ == "__main__":
-      seed_database()
+  load_dotenv()
+  # Nạp 5 bảng: orders, order_items, order_payments, customers, customer_pii với chunksize=2000
   ```
 
-- [ ] **Step 3: Chạy seeding và chạy test xác nhận PASS**
+- [x] **Step 3: Chạy seeding và chạy test xác nhận PASS**
   Run:
   ```bash
   python data_prep/seed_postgres.py
@@ -781,20 +758,17 @@ olist-lakehouse/
   ```
   Expected output: `1 passed`
 
-- [ ] **Step 4: Đẩy các bảng danh mục (Reference/Lookup CSV) lên MinIO `landing/`**
+- [x] **Step 4: Đẩy các bảng danh mục (Reference/Lookup CSV) lên MinIO `landing/`**
   Run:
   ```bash
-  # Dùng docker container mc để upload CSV vào bucket landing
-  docker compose exec -T mc-init /bin/sh -c "
-    mc cp /data_prep/raw/product_category_name_translation.csv myminio/landing/ref/
-    mc cp /data_prep/raw/olist_geolocation_dataset.csv myminio/landing/ref/
-  " || echo "Copy via python boto3 if container mount not direct"
+  python data_prep/upload_to_landing.py
   ```
+  Expected output: 4 file CSV tham chiếu đã nằm trong `s3://landing/ref/`.
 
-- [ ] **Step 5: Git commit Task 6**
+- [x] **Step 5: Git commit Task 6**
   ```bash
-  git add data_prep/seed_postgres.py tests/test_postgres_seeded.py
-  git commit -m "feat: seed postgres database with batch b0 transactional records"
+  git add data_prep/seed_postgres.py data_prep/upload_to_landing.py tests/test_postgres_seeded.py
+  git commit -m "feat(seed): seed postgres database with batch b0 transactional records and minio landing ref (Task 06)"
   ```
 
 #### 🧪 Mini-Lab 6: Khảo sát Hệ Thống Nguồn OLTP & MinIO Landing Trước Giờ G
