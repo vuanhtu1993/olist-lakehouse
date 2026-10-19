@@ -1,22 +1,25 @@
-# tests/test_storage_infra.py
 import os
 import psycopg2
 import boto3
 from botocore.client import Config
+from dotenv import load_dotenv
+
+# Tự động nạp các biến môi trường từ .env
+load_dotenv()
 
 def test_postgres_connection():
-    """Kiểm tra PostgreSQL 16 sẵn sàng nhận kết nối và đúng database"""
+    """Kiểm tra PostgreSQL (Supabase Cloud hoặc Local) sẵn sàng nhận kết nối và đúng database"""
     conn = psycopg2.connect(
-        host="localhost",
+        host=os.getenv("POSTGRES_HOST", "localhost"),
         port=int(os.getenv("POSTGRES_PORT", 5432)),
-        user=os.getenv("POSTGRES_USER", "olist_admin"),
-        password=os.getenv("POSTGRES_PASSWORD", "olist_password"),
-        dbname=os.getenv("POSTGRES_DB", "oltp_olist")
+        user=os.getenv("POSTGRES_USER", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD", "olist-lakehouse"),
+        dbname=os.getenv("POSTGRES_DB", "postgres")
     )
     cur = conn.cursor()
     cur.execute("SELECT version();")
     version = cur.fetchone()[0]
-    assert "PostgreSQL 16" in version
+    assert "PostgreSQL" in version, f"Không phát hiện PostgreSQL! Trả về: {version}"
     conn.close()
 
 def test_minio_buckets_exist():

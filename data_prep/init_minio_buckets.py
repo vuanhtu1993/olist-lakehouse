@@ -1,7 +1,9 @@
-# data_prep/init_minio_buckets.py
 import os
 import boto3
 from botocore.client import Config
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def init_buckets():
     """Khởi tạo 4 bucket cốt lõi của Medallion Architecture trên MinIO S3"""
