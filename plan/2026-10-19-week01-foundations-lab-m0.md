@@ -790,7 +790,7 @@ olist-lakehouse/
 - Create: `spark_jobs/smoke_test_e2e.py`
 - Create: `tests/test_e2e_smoke.py`
 
-- [ ] **Step 1: Viết test kiểm tra đối soát (Tie-out Test) giữa PostgreSQL và Trino**
+- [x] **Step 1: Viết test kiểm tra đối soát (Tie-out Test) giữa PostgreSQL và Trino**
   ```python
   # tests/test_e2e_smoke.py
   import psycopg2
@@ -820,7 +820,7 @@ olist-lakehouse/
       assert pg_count == trino_count, f"Dữ liệu lệch pha! PG={pg_count}, Trino={trino_count}"
   ```
 
-- [ ] **Step 2: Viết Spark Job `spark_jobs/smoke_test_e2e.py` thực hiện pipeline E2E**
+- [x] **Step 2: Viết Spark Job `spark_jobs/smoke_test_e2e.py` thực hiện pipeline E2E**
   ```python
   # spark_jobs/smoke_test_e2e.py
   from pyspark.sql import SparkSession
@@ -874,7 +874,7 @@ olist-lakehouse/
       run_smoke_test()
   ```
 
-- [ ] **Step 3: Chạy Spark Pipeline & Chạy test kiểm chứng Trino Tie-out**
+- [x] **Step 3: Chạy Spark Pipeline & Chạy test kiểm chứng Trino Tie-out**
   Run:
   ```bash
   python spark_jobs/smoke_test_e2e.py
@@ -882,7 +882,7 @@ olist-lakehouse/
   ```
   Expected output: `1 passed` (Số dòng hoàn toàn trùng khớp giữa OLTP và Lakehouse).
 
-- [ ] **Step 4: Git commit Task 7**
+- [x] **Step 4: Git commit Task 7**
   ```bash
   git add spark_jobs/smoke_test_e2e.py tests/test_e2e_smoke.py
   git commit -m "feat: implement end-to-end hello world pipeline from postgres to iceberg to trino"
