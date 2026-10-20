@@ -2,7 +2,7 @@ services:
   minio:
     image: elestio/minio:latest
     container_name: olist_minio
-    profiles: ["core", "full"]
+    profiles: [ "core", "full" ]
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -18,7 +18,7 @@ services:
         limits:
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
   polaris:
     image: tabulario/iceberg-rest:latest
     container_name: olist_polaris
-    profiles: ["core", "full"]
+    profiles: [ "core", "full" ]
     restart: unless-stopped
     ports:
       - "${POLARIS_PORT:-8181}:8181"
@@ -49,7 +49,7 @@ services:
   trino:
     image: trinodb/trino:442
     container_name: olist_trino
-    profiles: ["core", "full"]
+    profiles: [ "core", "full" ]
     restart: unless-stopped
     ports:
       - "${TRINO_PORT:-8080}:8080"
@@ -66,7 +66,7 @@ services:
   spark-notebook:
     image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: olist_spark_notebook
-    profiles: ["core", "full"]
+    profiles: [ "core", "full" ]
     restart: unless-stopped
     ports:
       - "${SPARK_PORT:-8888}:8888"
