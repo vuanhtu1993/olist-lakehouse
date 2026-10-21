@@ -38,7 +38,151 @@ flowchart TD
 
 ---
 
-## 2. Core Question 1: Data Lakehouse vs. Data Lake vs. Data Warehouse
+## 2. Executive Synthesis: The 4 Foundational Pillars (Week 01 Mental Model)
+
+Before diving into targeted interview questions, internalize the four foundational pillars that define modern Data Lakehouse engineering. These four pillars represent the core architectural conclusions from Week 01:
+
+```mermaid
+graph TD
+    subgraph StorageLayer ["1. Storage Layer (MinIO / S3)"]
+        ParquetData["Data Files (.parquet)<br/>• Columnar storage layout<br/>• Dictionary & Snappy compression<br/>• Footer with Min/Max/Null statistics"]
+    end
+
+    subgraph MetadataLayer ["2. Table Format & Metadata Layer (Apache Iceberg)"]
+        MetaJSON["v*.metadata.json<br/>(Schema, Partition Spec, Snapshot Tree)"]
+        ManList["snap-*.avro (Manifest List)<br/>(Partition boundaries & Snapshot tracking)"]
+        ManFile["manifest.avro (Manifest File)<br/>(Individual file paths & Column statistics)"]
+        
+        MetaJSON --> ManList --> ManFile --> ParquetData
+    end
+
+    subgraph CatalogLayer ["3. Central Catalog Coordination (Apache Polaris)"]
+        Catalog["Polaris REST Catalog<br/>• Single source of truth<br/>• Holds atomic pointer to active v*.metadata.json<br/>• Enforces Optimistic Concurrency Control (OCC)"]
+        Catalog -->|"Points to current root"| MetaJSON
+    end
+
+    subgraph ComputeLayer ["4. Decoupled Compute Engines"]
+        Spark["Apache Spark (PySpark)<br/>• Distributed Batch ELT/ETL<br/>• Stage-based DAG with disk checkpoints<br/>• Multi-worker parallel processing"]
+        Trino["Trino (PrestoSQL)<br/>• Interactive Low-Latency SQL<br/>• Memory-to-memory streaming pipeline<br/>• Powering BI & Ad-hoc Queries"]
+    end
+
+    Spark -->|"1. Writes Parquet data & Avro metadata"| StorageLayer
+    Spark -->|"2. Proposes atomic pointer swap"| CatalogLayer
+    Trino -->|"Reads table state pointer"| CatalogLayer
+    Trino -->|"Scans pruned Parquet files directly"| StorageLayer
+```
+
+---
+
+### Pillar 1: Data Lakehouse Architecture (Open Storage + Open Table Format)
+* **Definition Anatomy (Giải phẫu định nghĩa):**
+  * *Unified Data Architecture:* An architecture that merges the low-cost, infinite scalability, and multi-modal flexibility of a **Data Lake** (storing open formats like Parquet on S3/MinIO) with the enterprise-grade ACID transactions, schema enforcement, and SQL query interface of a **Data Warehouse**.
+  * *Open Table Format:* A software specification (e.g., Apache Iceberg) implemented across compute engines (Spark, Trino) that abstracts flat files on object storage into a logical, queryable relational SQL table.
+* **Root Cause Analysis (Lịch sử & Vấn đề giải quyết):**
+  * *The Past:* Traditional Data Warehouses (Snowflake, Teradata) coupled compute with proprietary storage, making petabyte-scale raw data storage prohibitively expensive. First-generation Data Lakes (raw CSV/JSON on HDFS/S3) were cheap but degenerated into unmanageable **"Data Swamps"** due to missing ACID guarantees, impossible row-level updates, and slow folder-listing scans (`listStatus`).
+  * *The Solution:* Decoupling compute from storage while introducing an Open Table Format (Apache Iceberg) that manages transaction logs at the file level.
+* **Trade-off (Đánh đổi):**
+  Decoupling compute from storage across a network incurs higher raw latency than co-located NVMe SSD warehouses. However, this trade-off is offset by 70–80% lower infrastructure costs and freedom from vendor lock-in.
+
+---
+
+### Pillar 2: Polaris REST Catalog & Iceberg Snapshot Evolution
+* **Definition Anatomy:**
+  * *Open Table Format (Apache Iceberg):* Engine-agnostic metadata specification tracking table state at the **file level** rather than directory level.
+  * *REST Catalog (Apache Polaris):* A stateless, centralized metadata registry that maintains an **atomic pointer** to the current `metadata.json` of each table and arbitrates concurrent writes via **Optimistic Concurrency Control (OCC)**.
+* **The Customer Table Update Walkthrough (Snapshot Mechanics):**
+  Consider a high-churn table like `olist_customers` receiving frequent updates:
+  1. **Data Write:** Spark writes new and modified records into new `.parquet` data files on MinIO.
+  2. **Manifest Generation:** Spark writes a new **Manifest File** (`.avro`) registering the paths, row counts, and column statistics (min/max) of the new files while marking deleted files.
+  3. **Snapshot Creation:** Spark writes a new **Manifest List** (`snap-*.avro`) representing a distinct **Snapshot ID** (a point-in-time state of the entire table).
+  4. **Table State File:** Spark generates `v2.metadata.json` containing the schema, partition spec, and history referencing the new snapshot.
+  5. **Atomic Commit via Polaris:** Spark calls the Polaris REST Catalog to atomically swap the table pointer from `v1.metadata.json` to `v2.metadata.json` using **Compare-And-Swap (CAS)**. Readers (Trino) immediately see the updated snapshot without locking the table.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Spark as Spark Engine (Writer)
+    participant S3 as MinIO (Object Storage)
+    participant Catalog as Polaris REST Catalog
+    participant Trino as Trino Engine (Reader)
+
+    Spark->>S3: 1. Write new part-*.parquet data files
+    Spark->>S3: 2. Write manifest-*.avro & snap-*.avro
+    Spark->>S3: 3. Write v2.metadata.json
+    Spark->>Catalog: 4. Commit: Swap pointer from v1.json to v2.json (CAS)
+    Catalog-->>Spark: 200 OK (Commit Success)
+    
+    Trino->>Catalog: 5. Query olist_customers: What is the current table pointer?
+    Catalog-->>Trino: Pointer = v2.metadata.json
+    Trino->>S3: 6. Read Manifest List -> Prune files -> Scan Parquet directly
+```
+
+* **Trade-off:**
+  Every write or update creates new metadata files and snapshots. Frequent small writes (micro-batching) lead to **Metadata Bloat** and the **Small Files Problem**. Production Lakehouses require periodic asynchronous table maintenance: compaction (`rewrite_data_files`), manifest rewriting, and snapshot expiration (`expire_snapshots`).
+
+---
+
+### Pillar 3: Distributed Compute Specialization — Apache Spark vs. Trino
+* **Definition Anatomy:**
+  * *Apache Spark:* Distributed general-purpose data processing engine executing resilient, stage-based DAG (Directed Acyclic Graph) computation with intermediate disk checkpoints and shuffle spilling.
+  * *Trino:* Distributed Massively Parallel Processing (MPP) query engine executing memory-to-memory pipelined streaming across workers without intermediate disk spooling.
+* **Division of Labor in the Lakehouse:**
+  * **Apache Spark for Heavy Batch ELT/ETL:** Coordinates multiple workers to execute heavy data transformations, complex joins, deduplication, and Medallion layer promotions (Bronze $\rightarrow$ Silver $\rightarrow$ Gold). If an executor dies mid-job, Spark's **task-level retry** recomputes only the lost partition from the DAG lineage.
+  * **Trino for Interactive SQL & BI Analytics:** Connects directly to the Polaris Catalog to inspect Iceberg metadata and stream pruned Parquet files into memory, delivering sub-second response times for Superset dashboards, business ad-hoc queries, and automated reconciliation tests.
+
+| Dimension | Apache Spark (PySpark) | Trino (PrestoSQL) |
+| :--- | :--- | :--- |
+| **Execution Model** | Stage-based DAG with disk shuffle checkpoints | Pure In-Memory Pipelined Streaming |
+| **Memory Model** | Spills gracefully to disk when RAM is exhausted | Memory-bound; queries abort if cluster memory limits are hit |
+| **Fault Tolerance** | **High:** Task-level retries; resilient to worker loss | **Fail-Fast:** Query fails immediately if 1 worker crashes |
+| **Startup Latency** | High (JVM bootstrap, driver negotiation, DAG planning) | Near-zero (long-running coordinator/workers, ready for SQL) |
+| **Primary Use Case** | Heavy Batch ELT, Data Ingestion, ML Data Prep | Interactive BI, Ad-hoc SQL Analytics, Data Tie-Outs |
+
+---
+
+### Pillar 4: Parquet Storage Mechanics & I/O Optimization
+* **Definition Anatomy:**
+  * *Apache Parquet:* An open-source, binary, self-describing, **column-oriented** file format organized into **Row Groups** (typically 128MB–512MB), **Column Chunks**, and **Pages**, with embedded statistical metadata in the **File Footer**.
+* **The 3 Performance Accelerators:**
+  1. **Column Projection (Selective Scanning):**  
+     Queries in OLAP typically request 3 to 5 columns out of 50. In Parquet, columns are stored in contiguous byte arrays. Reading a subset of columns avoids scanning 90%+ of the file's data volume, radically reducing disk and network I/O.
+  2. **Homogeneous Compression & Encoding:**  
+     Because all values in a column share the exact same data type, Parquet applies specialized compression algorithms:
+     * *Dictionary Encoding:* Replaces repetitive strings (e.g., Brazilian state codes `'SP'`, `'RJ'`) with small integer IDs.
+     * *Run-Length Encoding (RLE) & Bit-Packing:* Compresses repeated sequences into count-value pairs.
+     * *Page Compression (Snappy / ZSTD):* Yields 4x to 8x higher compression ratios than raw text (CSV/JSON).
+  3. **Predicate Pushdown & Footer Statistics:**  
+     Parquet query engines **read the File Footer first**. The footer records Min, Max, and Null Count statistics for every column within every Row Group.
+     * *Example:* For `WHERE order_total > 500.00`, if the Row Group footer indicates `Max(order_total) = 320.00`, the engine completely skips that entire Row Group without decompressing or reading a single data byte.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                         PARQUET FILE                         │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ Row Group 1 (e.g., Rows 1 - 100,000)                     │ │
+│ │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐ │ │
+│ │  │ Col 1 Chunks │  │ Col 2 Chunks │  │  Col 3 Chunks   │ │ │
+│ │  │ (customer_id)│  │ (state_code) │  │  (total_amount) │ │ │
+│ │  └──────────────┘  └──────────────┘  └─────────────────┘ │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ Row Group 2 (e.g., Rows 100,001 - 200,000)               │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ FILE FOOTER (Read FIRST by Engine):                      │ │
+│ │ • Table Schema & Column Chunk Offsets                    │ │
+│ │ • Row Group 1 Stats: total_amount [Min=12.50, Max=240.00]│ │
+│ │ • Row Group 2 Stats: total_amount [Min=250.00, Max=890.0]│ │
+│ └──────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+```
+
+* **Trade-off:**
+  Parquet is strictly an **append/batch-oriented analytical format**. Constructing columnar pages and computing footer statistics requires heavy memory buffering and CPU encoding. Writing single-row inserts (typical in OLTP databases like PostgreSQL) is computationally disastrous.
+
+---
+
+## 3. Core Question 1: Data Lakehouse vs. Data Lake vs. Data Warehouse
 
 ### Question:
 > *"Why did you choose a Data Lakehouse architecture for your project instead of a traditional Data Warehouse or a simple Data Lake?"*
@@ -54,7 +198,7 @@ flowchart TD
 
 ---
 
-## 3. Core Question 2: The Role of a Catalog in Iceberg
+## 4. Core Question 2: The Role of a Catalog in Iceberg & Snapshot Management
 
 ### Question:
 > *"If Apache Iceberg already stores metadata files (`.metadata.json` and `.avro`) on MinIO/S3, why do we need a Catalog like Apache Polaris at all?"*
@@ -74,13 +218,13 @@ flowchart TD
 
 ---
 
-## 4. Core Question 3: Parquet vs. CSV for Analytical Systems
+## 5. Core Question 3: Parquet vs. CSV for Analytical Systems
 
 ### Question:
 > *"Why is Apache Parquet significantly faster and cheaper than CSV for analytical queries?"*
 
 ### Model Answer:
-Parquet's superiority rests on three technical pillars:
+Parquet's superiority rests on three technical pillars (see [Pillar 4](#pillar-4-parquet-storage-mechanics--io-optimization)):
 1. **Columnar Projection (I/O Reduction):**  
    In analytics, queries usually request 3 to 5 columns out of 50. CSV is row-oriented; reading even one column requires scanning the entire file from disk. Parquet reads only the contiguous byte offsets of the requested columns, cutting disk I/O by 90% or more.
 2. **Homogeneous Compression & Dictionary Encoding:**  
@@ -90,13 +234,13 @@ Parquet's superiority rests on three technical pillars:
 
 ---
 
-## 5. Core Question 4: Choosing Between Apache Spark and Trino
+## 6. Core Question 4: Choosing Between Apache Spark and Trino
 
 ### Question:
 > *"How do you decide whether to write a pipeline task in Apache Spark or Trino?"*
 
 ### Model Answer:
-The decision comes down to the trade-off between **Fault Tolerance** and **In-Memory Streaming Latency**:
+The decision comes down to the trade-off between **Fault Tolerance** and **In-Memory Streaming Latency** (detailed in [Pillar 3](#pillar-3-distributed-compute-specialization--apache-spark-vs-trino)):
 
 ```mermaid
 flowchart LR
@@ -118,7 +262,7 @@ flowchart LR
 
 ---
 
-## 6. Core Question 5: Software Engineering Practices in Data Engineering
+## 7. Core Question 5: Software Engineering Practices in Data Engineering
 
 ### Question:
 > *"You come from a Software Engineering background. How did those software engineering skills influence your Data Engineering implementation?"*
@@ -136,7 +280,7 @@ flowchart LR
 
 ---
 
-## 7. The 90-Second Elevator Pitch
+## 8. The 90-Second Elevator Pitch
 
 ### Prompt:
 > *"Tell me about the architecture of your Olist Lakehouse project."*
@@ -154,7 +298,7 @@ flowchart LR
 
 ---
 
-## 8. Summary of Week 01 Modules
+## 9. Summary of Week 01 Modules
 
 Congratulations! You have completed all 8 theoretical modules for Week 01:
 
