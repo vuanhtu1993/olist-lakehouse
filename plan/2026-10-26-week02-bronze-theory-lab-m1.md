@@ -169,7 +169,7 @@ olist-lakehouse/
 - Create: `tests/test_all_tables_seeded.py`
 - Modify: `data_prep/seed_postgres.py`
 
-- [ ] **Step 1: Viết test kiểm tra đủ 10 bảng Olist trong PostgreSQL (Failing Test)**
+- [x] **Step 1: Viết test kiểm tra đủ 10 bảng Olist trong PostgreSQL (Failing Test)**
   Tạo tệp `tests/test_all_tables_seeded.py`:
   ```python
   # tests/test_all_tables_seeded.py
@@ -226,11 +226,11 @@ olist-lakehouse/
       conn.close()
   ```
 
-- [ ] **Step 2: Chạy test để xác nhận test thất bại (Red Phase)**
+- [x] **Step 2: Chạy test để xác nhận test thất bại (Red Phase)**
   Run: `pytest tests/test_all_tables_seeded.py -v`  
   Expected output: `FAIL` với lỗi `Bảng 'products' chưa được tạo trong PostgreSQL!` (do Tuần 01 mới chỉ nạp 5 bảng transactional).
 
-- [ ] **Step 3: Cập nhật `data_prep/seed_postgres.py` để nạp đủ 10 bảng (Green Phase)**
+- [x] **Step 3: Cập nhật `data_prep/seed_postgres.py` để nạp đủ 10 bảng (Green Phase)**
   Cập nhật file `data_prep/seed_postgres.py` mở rộng nạp thêm 5 bảng danh mục và bổ trợ:
   ```python
   # data_prep/seed_postgres.py
@@ -308,12 +308,12 @@ olist-lakehouse/
       seed_database()
   ```
 
-- [ ] **Step 4: Chạy nạp dữ liệu và kiểm thử lại (Green Phase Verification)**
+- [x] **Step 4: Chạy nạp dữ liệu và kiểm thử lại (Green Phase Verification)**
   Run: `python data_prep/seed_postgres.py`  
   Run: `pytest tests/test_all_tables_seeded.py -v -s`  
   Expected output: `PASSED` với đầy đủ 10 bảng và số lượng dòng hiển thị chi tiết.
 
-- [ ] **Step 5: Git commit hoàn thiện Task 1**
+- [x] **Step 5: Git commit hoàn thiện Task 1**
   ```bash
   git add tests/test_all_tables_seeded.py data_prep/seed_postgres.py
   git commit -m "feat(data_prep): seed all 10 olist tables into postgresql for week 02 eda"
