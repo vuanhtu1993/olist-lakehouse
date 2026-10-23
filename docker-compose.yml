@@ -83,6 +83,7 @@ services:
       - ./spark_jobs:/home/jovyan/work/spark_jobs
       - ./data_prep:/home/jovyan/work/data_prep
       - ./tests:/home/jovyan/work/tests
+      - ./notebooks:/home/jovyan/work/notebooks
       - ivy_cache:/home/jovyan/.ivy2
     depends_on:
       - polaris
