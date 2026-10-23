@@ -357,7 +357,7 @@ olist-lakehouse/
 - Create: `docs/week02/requirements.md`
 - Test: `tests/test_requirements_spec.py`
 
-- [ ] **Step 1: Viết test kiểm tra tính hợp lệ của tài liệu yêu cầu (Failing Test)**
+- [x] **Step 1: Viết test kiểm tra tính hợp lệ của tài liệu yêu cầu (Failing Test)**
   Tạo tệp `tests/test_requirements_spec.py`:
   ```python
   # tests/test_requirements_spec.py
@@ -375,21 +375,21 @@ olist-lakehouse/
       assert "Made by Anh Tu - Share to be share" in content, "Thiếu footer bản quyền!"
   ```
 
-- [ ] **Step 2: Chạy test để xác nhận test thất bại**
+- [x] **Step 2: Chạy test để xác nhận test thất bại**
   Run: `pytest tests/test_requirements_spec.py -v`  
   Expected output: `FAIL` do file chưa tồn tại.
 
-- [ ] **Step 3: Biên soạn tài liệu `docs/week02/requirements.md`**
+- [x] **Step 3: Biên soạn tài liệu `docs/week02/requirements.md`**
   Tạo `docs/week02/requirements.md` với 3 User Stories:
   - **US-01:** Báo cáo Doanh thu Đa Chiều (Doanh thu gộp GMV, thuần, phí ship theo tháng, ngành hàng, người bán).
   - **US-02:** Giá trị vòng đời khách hàng LTV theo Cohort (Phân biệt sống còn giữa `customer_id` và `customer_unique_id`).
   - **US-03:** Phân khúc RFM tự động theo phân vị (Recency, Frequency, Monetary).
 
-- [ ] **Step 4: Chạy test xác nhận tài liệu đạt chuẩn**
+- [x] **Step 4: Chạy test xác nhận tài liệu đạt chuẩn**
   Run: `pytest tests/test_requirements_spec.py -v`  
   Expected output: `PASSED`.
 
-- [ ] **Step 5: Git commit hoàn thiện Task 2**
+- [x] **Step 5: Git commit hoàn thiện Task 2**
   ```bash
   git add docs/week02/requirements.md tests/test_requirements_spec.py
   git commit -m "docs(requirements): create 3 business user stories with measured acceptance criteria"
