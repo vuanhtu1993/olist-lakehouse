@@ -409,7 +409,7 @@ olist-lakehouse/
 - Modify: `docs/week02/eda_summary.json`
 - Test: `tests/test_eda_profiling.py`
 
-- [ ] **Step 1: Viết test kiểm tra kết quả EDA profiling chuyên sâu 5 Trụ Cột Kỹ Thuật (Failing Test)**
+- [x] **Step 1: Viết test kiểm tra kết quả EDA profiling chuyên sâu 5 Trụ Cột Kỹ Thuật (Failing Test)**
   Cập nhật `tests/test_eda_profiling.py`:
   ```python
   # tests/test_eda_profiling.py
@@ -473,11 +473,11 @@ olist-lakehouse/
       assert "spark.read" in nb_content, "Notebook phải chứa code Spark DataFrame API!"
   ```
 
-- [ ] **Step 2: Chạy test để xác nhận test thất bại (Red Phase)**
+- [x] **Step 2: Chạy test để xác nhận test thất bại (Red Phase)**
   Run: `pytest tests/test_eda_profiling.py -v`  
   Expected output: `FAIL` (do `eda_summary.json` cũ chưa có các trường S3 URI, `min_len`, `max_len`, `zero_count`...).
 
-- [ ] **Step 3: Nâng cấp script profiling kết nối trực tiếp S3 & Postgres và tái tạo Notebook**
+- [x] **Step 3: Nâng cấp script profiling kết nối trực tiếp S3 & Postgres và tái tạo Notebook**
   Cập nhật `scripts/run_eda_profiling.py`:
   - 5 bảng transactional: Kết nối PostgreSQL qua SQLAlchemy engine để query và profiling trực tiếp.
   - 5 tệp CSV: Kết nối MinIO landing bucket qua Boto3 S3 client (`endpoint_url='http://localhost:9000'`), stream trực tiếp vào bộ nhớ qua `s3.get_object()['Body']` mà không đọc ổ đĩa cục bộ `data_prep/raw/`.
@@ -490,12 +490,12 @@ olist-lakehouse/
   - Ghi đè file `docs/week02/eda_summary.json`.
   - Tự động sinh `notebooks/eda_profiling.ipynb` chuẩn hóa với PySpark S3A connector (`fs.s3a.endpoint`, `fs.s3a.access.key`) và Postgres JDBC để học viên thực hành phân tán trên container `olist_spark_notebook`.
 
-- [ ] **Step 4: Chạy script profiling và xác thực test xanh lá (Green Phase)**
+- [x] **Step 4: Chạy script profiling và xác thực test xanh lá (Green Phase)**
   Run: `python scripts/run_eda_profiling.py`  
   Run: `pytest tests/test_eda_profiling.py -v -s`  
   Expected output: `PASSED` với đầy đủ 10 thực thể được đo đạc chuyên sâu.
 
-- [ ] **Step 5: Git commit hoàn thiện Task 3 nâng cấp**
+- [x] **Step 5: Git commit hoàn thiện Task 3 nâng cấp**
   ```bash
   git add scripts/run_eda_profiling.py notebooks/eda_profiling.ipynb docs/week02/eda_summary.json tests/test_eda_profiling.py
   git commit -m "feat(eda): upgrade to direct s3 profiling and 5 data engineering pillars"

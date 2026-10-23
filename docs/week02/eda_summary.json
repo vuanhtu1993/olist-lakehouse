@@ -1,431 +1,752 @@
 {
   "orders": {
     "source_type": "PostgreSQL",
+    "source_origin": "postgresql.public.orders",
     "row_count": 14940,
     "column_count": 9,
     "columns": {
       "order_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14940
+        "distinct_count": 14940,
+        "uniqueness_ratio": 1.0,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "customer_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14940
+        "distinct_count": 14940,
+        "uniqueness_ratio": 1.0,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "order_status": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 7
+        "distinct_count": 7,
+        "uniqueness_ratio": 0.0005,
+        "min_len": 7,
+        "max_len": 11,
+        "avg_len": 9.0
       },
       "order_purchase_timestamp": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14874
+        "distinct_count": 14874,
+        "uniqueness_ratio": 0.9956,
+        "min_date": "2016-09-04 21:15:19",
+        "max_date": "2017-06-30 23:20:08"
       },
       "order_approved_at": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 42,
         "null_pct": 0.28,
-        "distinct_count": 14501
+        "distinct_count": 14501,
+        "uniqueness_ratio": 0.9706,
+        "min_date": "2016-09-15 12:16:38",
+        "max_date": "2017-07-05 17:09:11"
       },
       "order_delivered_carrier_date": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 494,
         "null_pct": 3.31,
-        "distinct_count": 13302
+        "distinct_count": 13302,
+        "uniqueness_ratio": 0.8904,
+        "min_date": "2016-10-08 10:34:01",
+        "max_date": "2017-07-27 17:17:44"
       },
       "order_delivered_customer_date": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 736,
         "null_pct": 4.93,
-        "distinct_count": 14038
+        "distinct_count": 14038,
+        "uniqueness_ratio": 0.9396,
+        "min_date": "2016-10-11 13:46:32",
+        "max_date": "2017-12-04 18:36:29"
       },
       "order_estimated_delivery_date": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 175
+        "distinct_count": 175,
+        "uniqueness_ratio": 0.0117,
+        "min_date": "2016-09-30 00:00:00",
+        "max_date": "2017-10-11 00:00:00"
       },
       "updated_at": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14874
+        "distinct_count": 14874,
+        "uniqueness_ratio": 0.9956,
+        "min_date": "2016-09-04 21:15:19",
+        "max_date": "2017-06-30 23:20:08"
       }
     }
   },
   "order_items": {
     "source_type": "PostgreSQL",
+    "source_origin": "postgresql.public.order_items",
     "row_count": 16679,
     "column_count": 8,
     "columns": {
       "order_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14743
+        "distinct_count": 14743,
+        "uniqueness_ratio": 0.8839,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "order_item_id": {
         "data_type": "bigint",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 15
+        "distinct_count": 15,
+        "uniqueness_ratio": 0.0009,
+        "min_value": 1.0,
+        "max_value": 15.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "product_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 7045
+        "distinct_count": 7045,
+        "uniqueness_ratio": 0.4224,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "seller_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 1013
+        "distinct_count": 1013,
+        "uniqueness_ratio": 0.0607,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "shipping_limit_date": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14513
+        "distinct_count": 14513,
+        "uniqueness_ratio": 0.8701,
+        "min_date": "2016-09-19 00:15:34",
+        "max_date": "2020-04-09 22:35:08"
       },
       "price": {
         "data_type": "double precision",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 1881
+        "distinct_count": 1881,
+        "uniqueness_ratio": 0.1128,
+        "min_value": 2.9,
+        "max_value": 6735.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "freight_value": {
         "data_type": "double precision",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 2891
+        "distinct_count": 2891,
+        "uniqueness_ratio": 0.1733,
+        "min_value": 0.01,
+        "max_value": 314.02,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "updated_at": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14679
+        "distinct_count": 14679,
+        "uniqueness_ratio": 0.8801,
+        "min_date": "2016-09-04 21:15:19",
+        "max_date": "2017-06-30 23:20:08"
       }
     }
   },
   "order_payments": {
     "source_type": "PostgreSQL",
+    "source_origin": "postgresql.public.order_payments",
     "row_count": 15870,
     "column_count": 6,
     "columns": {
       "order_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14939
+        "distinct_count": 14939,
+        "uniqueness_ratio": 0.9413,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "payment_sequential": {
         "data_type": "bigint",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 29
+        "distinct_count": 29,
+        "uniqueness_ratio": 0.0018,
+        "min_value": 1.0,
+        "max_value": 29.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "payment_type": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 4
+        "distinct_count": 4,
+        "uniqueness_ratio": 0.0003,
+        "min_len": 6,
+        "max_len": 11,
+        "avg_len": 9.7
       },
       "payment_installments": {
         "data_type": "bigint",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 17
+        "distinct_count": 17,
+        "uniqueness_ratio": 0.0011,
+        "min_value": 1.0,
+        "max_value": 18.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "payment_value": {
         "data_type": "double precision",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 8665
+        "distinct_count": 8665,
+        "uniqueness_ratio": 0.546,
+        "min_value": 0.0,
+        "max_value": 6929.31,
+        "zero_count": 4,
+        "negative_count": 0
       },
       "updated_at": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14873
+        "distinct_count": 14873,
+        "uniqueness_ratio": 0.9372,
+        "min_date": "2016-09-04 21:15:19",
+        "max_date": "2017-06-30 23:20:08"
       }
     }
   },
   "customers": {
     "source_type": "PostgreSQL",
+    "source_origin": "postgresql.public.customers",
     "row_count": 99441,
     "column_count": 5,
     "columns": {
       "customer_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 99441
+        "distinct_count": 99441,
+        "uniqueness_ratio": 1.0,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "customer_unique_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 96096
+        "distinct_count": 96096,
+        "uniqueness_ratio": 0.9664,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "customer_zip_code_prefix": {
         "data_type": "bigint",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 14994
+        "distinct_count": 14994,
+        "uniqueness_ratio": 0.1508,
+        "min_value": 1003.0,
+        "max_value": 99990.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "customer_city": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 4119
+        "distinct_count": 4119,
+        "uniqueness_ratio": 0.0414,
+        "min_len": 3,
+        "max_len": 32,
+        "avg_len": 10.3
       },
       "customer_state": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 27
+        "distinct_count": 27,
+        "uniqueness_ratio": 0.0003,
+        "min_len": 2,
+        "max_len": 2,
+        "avg_len": 2.0
       }
     }
   },
   "customer_pii": {
     "source_type": "PostgreSQL",
+    "source_origin": "postgresql.public.customer_pii",
     "row_count": 96096,
     "column_count": 5,
     "columns": {
       "customer_unique_id": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 96096
+        "distinct_count": 96096,
+        "uniqueness_ratio": 1.0,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "full_name": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 41471
+        "distinct_count": 41471,
+        "uniqueness_ratio": 0.4316,
+        "min_len": 6,
+        "max_len": 33,
+        "avg_len": 15.6
       },
       "email": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 70051
+        "distinct_count": 70051,
+        "uniqueness_ratio": 0.729,
+        "min_len": 15,
+        "max_len": 40,
+        "avg_len": 23.1
       },
       "phone_number": {
         "data_type": "text",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 96095
+        "distinct_count": 96095,
+        "uniqueness_ratio": 1.0,
+        "min_len": 12,
+        "max_len": 16,
+        "avg_len": 14.0
       },
       "birth_date": {
         "data_type": "text",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 20938
+        "distinct_count": 20938,
+        "uniqueness_ratio": 0.2179,
+        "min_date": "1950-10-20",
+        "max_date": "2008-10-18"
       }
     }
   },
   "products": {
     "source_type": "MinIO_Landing",
+    "s3_uri": "s3://landing/ref/olist_products_dataset.csv",
+    "s3_endpoint": "http://localhost:9000",
     "row_count": 32951,
     "column_count": 9,
     "columns": {
       "product_id": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 32951
+        "distinct_count": 32951,
+        "uniqueness_ratio": 1.0,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "product_category_name": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 610,
         "null_pct": 1.85,
-        "distinct_count": 73
+        "distinct_count": 73,
+        "uniqueness_ratio": 0.0022,
+        "min_len": 3,
+        "max_len": 46,
+        "avg_len": 15.0
       },
       "product_name_lenght": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 610,
         "null_pct": 1.85,
-        "distinct_count": 66
+        "distinct_count": 66,
+        "uniqueness_ratio": 0.002,
+        "min_value": 5.0,
+        "max_value": 76.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "product_description_lenght": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 610,
         "null_pct": 1.85,
-        "distinct_count": 2960
+        "distinct_count": 2960,
+        "uniqueness_ratio": 0.0898,
+        "min_value": 4.0,
+        "max_value": 3992.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "product_photos_qty": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 610,
         "null_pct": 1.85,
-        "distinct_count": 19
+        "distinct_count": 19,
+        "uniqueness_ratio": 0.0006,
+        "min_value": 1.0,
+        "max_value": 20.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "product_weight_g": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 2,
         "null_pct": 0.01,
-        "distinct_count": 2204
+        "distinct_count": 2204,
+        "uniqueness_ratio": 0.0669,
+        "min_value": 0.0,
+        "max_value": 40425.0,
+        "zero_count": 4,
+        "negative_count": 0
       },
       "product_length_cm": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 2,
         "null_pct": 0.01,
-        "distinct_count": 99
+        "distinct_count": 99,
+        "uniqueness_ratio": 0.003,
+        "min_value": 7.0,
+        "max_value": 105.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "product_height_cm": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 2,
         "null_pct": 0.01,
-        "distinct_count": 102
+        "distinct_count": 102,
+        "uniqueness_ratio": 0.0031,
+        "min_value": 2.0,
+        "max_value": 105.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "product_width_cm": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 2,
         "null_pct": 0.01,
-        "distinct_count": 95
+        "distinct_count": 95,
+        "uniqueness_ratio": 0.0029,
+        "min_value": 6.0,
+        "max_value": 118.0,
+        "zero_count": 0,
+        "negative_count": 0
       }
     }
   },
   "sellers": {
     "source_type": "MinIO_Landing",
+    "s3_uri": "s3://landing/ref/olist_sellers_dataset.csv",
+    "s3_endpoint": "http://localhost:9000",
     "row_count": 3095,
     "column_count": 4,
     "columns": {
       "seller_id": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 3095
+        "distinct_count": 3095,
+        "uniqueness_ratio": 1.0,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "seller_zip_code_prefix": {
         "data_type": "int64",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 2246
+        "distinct_count": 2246,
+        "uniqueness_ratio": 0.7257,
+        "min_value": 1001.0,
+        "max_value": 99730.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "seller_city": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 611
+        "distinct_count": 611,
+        "uniqueness_ratio": 0.1974,
+        "min_len": 2,
+        "max_len": 40,
+        "avg_len": 10.2
       },
       "seller_state": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 23
+        "distinct_count": 23,
+        "uniqueness_ratio": 0.0074,
+        "min_len": 2,
+        "max_len": 2,
+        "avg_len": 2.0
       }
     }
   },
   "order_reviews": {
     "source_type": "MinIO_Landing",
+    "s3_uri": "s3://landing/reviews/olist_order_reviews_dataset.csv",
+    "s3_endpoint": "http://localhost:9000",
     "row_count": 99224,
     "column_count": 7,
     "columns": {
       "review_id": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 98410
+        "distinct_count": 98410,
+        "uniqueness_ratio": 0.9918,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "order_id": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 98673
+        "distinct_count": 98673,
+        "uniqueness_ratio": 0.9944,
+        "min_len": 32,
+        "max_len": 32,
+        "avg_len": 32.0
       },
       "review_score": {
         "data_type": "int64",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 5
+        "distinct_count": 5,
+        "uniqueness_ratio": 0.0001,
+        "min_value": 1.0,
+        "max_value": 5.0,
+        "zero_count": 0,
+        "negative_count": 0
       },
       "review_comment_title": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 87656,
         "null_pct": 88.34,
-        "distinct_count": 4527
+        "distinct_count": 4527,
+        "uniqueness_ratio": 0.0456,
+        "min_len": 1,
+        "max_len": 26,
+        "avg_len": 11.9
       },
       "review_comment_message": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 58247,
         "null_pct": 58.7,
-        "distinct_count": 36159
+        "distinct_count": 36159,
+        "uniqueness_ratio": 0.3644,
+        "min_len": 1,
+        "max_len": 208,
+        "avg_len": 68.6
       },
       "review_creation_date": {
         "data_type": "object",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 636
+        "distinct_count": 636,
+        "uniqueness_ratio": 0.0064,
+        "min_date": "2016-10-02 00:00:00",
+        "max_date": "2018-08-31 00:00:00"
       },
       "review_answer_timestamp": {
         "data_type": "object",
+        "data_category": "datetime",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 98248
+        "distinct_count": 98248,
+        "uniqueness_ratio": 0.9902,
+        "min_date": "2016-10-07 18:32:28",
+        "max_date": "2018-10-29 12:27:35"
       }
     }
   },
   "geolocation": {
     "source_type": "MinIO_Landing",
+    "s3_uri": "s3://landing/ref/olist_geolocation_dataset.csv",
+    "s3_endpoint": "http://localhost:9000",
     "row_count": 1000163,
     "column_count": 5,
     "columns": {
       "geolocation_zip_code_prefix": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 19015
+        "distinct_count": 19015,
+        "uniqueness_ratio": 0.019,
+        "min_len": 5,
+        "max_len": 5,
+        "avg_len": 5.0
       },
       "geolocation_lat": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 717363
+        "distinct_count": 717363,
+        "uniqueness_ratio": 0.7172,
+        "min_value": -36.6053744107061,
+        "max_value": 45.06593318269697,
+        "zero_count": 0,
+        "negative_count": 998827
       },
       "geolocation_lng": {
         "data_type": "float64",
+        "data_category": "numeric",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 717615
+        "distinct_count": 717615,
+        "uniqueness_ratio": 0.7175,
+        "min_value": -101.46676644931476,
+        "max_value": 121.10539381057764,
+        "zero_count": 0,
+        "negative_count": 1000160
       },
       "geolocation_city": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 8011
+        "distinct_count": 8011,
+        "uniqueness_ratio": 0.008,
+        "min_len": 2,
+        "max_len": 38,
+        "avg_len": 10.5
       },
       "geolocation_state": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 27
+        "distinct_count": 27,
+        "uniqueness_ratio": 0.0,
+        "min_len": 2,
+        "max_len": 2,
+        "avg_len": 2.0
       }
     }
   },
   "product_category_name_translation": {
     "source_type": "MinIO_Landing",
+    "s3_uri": "s3://landing/ref/product_category_name_translation.csv",
+    "s3_endpoint": "http://localhost:9000",
     "row_count": 71,
     "column_count": 2,
     "columns": {
       "product_category_name": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 71
+        "distinct_count": 71,
+        "uniqueness_ratio": 1.0,
+        "min_len": 3,
+        "max_len": 46,
+        "avg_len": 17.0
       },
       "product_category_name_english": {
         "data_type": "object",
+        "data_category": "string",
         "null_count": 0,
         "null_pct": 0.0,
-        "distinct_count": 71
+        "distinct_count": 71,
+        "uniqueness_ratio": 1.0,
+        "min_len": 3,
+        "max_len": 39,
+        "avg_len": 16.1
       }
     }
   }
