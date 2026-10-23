@@ -400,18 +400,33 @@ olist-lakehouse/
 
 ---
 
-### Task 3: Xây Dựng EDA Profiling Notebook Cho Cả 2 Nguồn Dữ Liệu (Postgres & MinIO Landing)
+### Task 3: Nâng Cấp EDA Profiling Đọc Trực Tiếp S3 & Đo Lường 5 Trụ Cột Kỹ Thuật Data Engineering
 **Phụ thuộc:** Task 1  
 **WBS:** WP2.3 | **Syllabus:** Bước 2 Lab M1  
 **Files:**
 - Create: `notebooks/eda_profiling.ipynb`
-- Create: `scripts/run_eda_profiling.py`
+- Modify: `scripts/run_eda_profiling.py`
+- Modify: `docs/week02/eda_summary.json`
 - Test: `tests/test_eda_profiling.py`
 
-- [x] **Step 1: Viết test kiểm tra kết quả EDA profiling (Failing Test)**
-  Tạo `tests/test_eda_profiling.py`:
+- [ ] **Step 1: Viết test kiểm tra kết quả EDA profiling chuyên sâu 5 Trụ Cột Kỹ Thuật (Failing Test)**
+  Cập nhật `tests/test_eda_profiling.py`:
   ```python
   # tests/test_eda_profiling.py
+  """
+  Test kiểm thử EDA Profiling chuẩn Production Data Engineering:
+  1. Nguồn dữ liệu tách biệt chuẩn Enterprise Lakehouse:
+     - 5 thực thể transactional: Đọc trực tiếp từ PostgreSQL OLTP.
+     - 5 thực thể reference/reviews: Đọc trực tiếp từ MinIO S3 (s3://landing/...) qua S3 API/Boto3, không đọc local file!
+  2. Đo lường đầy đủ 5 Trụ Cột Kỹ Thuật (5 Pillars of DE EDA):
+     - Trụ cột 1 (Schema Sizing): min_len, max_len cho trường chuỗi để tối ưu VARCHAR & phát hiện khoảng trắng.
+     - Trụ cột 2 (Domain Boundaries): min_value, max_value, zero_count, negative_count cho trường số/tiền tệ.
+     - Trụ cột 3 (Temporal Boundaries): min_date, max_date cho trường thời gian.
+     - Trụ cột 4 (Key Distribution): distinct_count, null_pct, uniqueness ratio.
+     - Trụ cột 5 (Notebook Execution): Jupyter Notebook chứa mã PySpark đọc trực tiếp S3A và Postgres JDBC.
+  Tác giả: Anh Tú (Pedagogical Approach)
+  Made by Anh Tu - Share to be share
+  """
   import os, json
 
   def test_eda_notebook_and_output():
@@ -431,35 +446,68 @@ olist-lakehouse/
           assert e in data, f"Thiếu thông tin profiling của '{e}' trong summary!"
           info = data[e]
           assert "source_type" in info, f"Thiếu nguồn lưu trữ (PostgreSQL / MinIO_Landing) cho '{e}'!"
-          assert "row_count" in info and info["row_count"] > 0
-          for col, stats in info["columns"].items():
+          assert info["row_count"] > 0, f"Thực thể '{e}' không được có 0 dòng!"
+          
+          # Kiểm tra nhãn nguồn đúng kiến trúc
+          if e in ["orders", "order_items", "order_payments", "customers", "customer_pii"]:
+              assert info["source_type"] == "PostgreSQL"
+          else:
+              assert info["source_type"] == "MinIO_Landing"
+              assert "s3_uri" in info, f"Thực thể Landing '{e}' phải có thông tin s3_uri!"
+          
+          cols = info["columns"]
+          for col_name, stats in cols.items():
               assert "null_pct" in stats and "distinct_count" in stats
+              # Kiểm tra 5 Pillars
+              if stats.get("data_category") == "string":
+                  assert "max_len" in stats and "min_len" in stats, f"Cột chuỗi {e}.{col_name} phải có min_len, max_len!"
+              elif stats.get("data_category") == "numeric":
+                  assert "min_value" in stats and "max_value" in stats, f"Cột số {e}.{col_name} phải có min_value, max_value!"
+                  assert "zero_count" in stats and "negative_count" in stats, f"Cột số {e}.{col_name} phải có zero_count, negative_count!"
+              elif stats.get("data_category") == "datetime":
+                  assert "min_date" in stats and "max_date" in stats, f"Cột thời gian {e}.{col_name} phải có min_date, max_date!"
+
+      # Kiểm tra nội dung Notebook có code PySpark S3A và Postgres JDBC
+      nb_content = open(nb_path, "r", encoding="utf-8").read()
+      assert "s3a://landing" in nb_content, "Notebook phải chứa code đọc dữ liệu từ s3a://landing!"
+      assert "spark.read" in nb_content, "Notebook phải chứa code Spark DataFrame API!"
   ```
 
-- [x] **Step 2: Chạy test để xác nhận test thất bại**
+- [ ] **Step 2: Chạy test để xác nhận test thất bại (Red Phase)**
   Run: `pytest tests/test_eda_profiling.py -v`  
-  Expected output: `FAIL`.
+  Expected output: `FAIL` (do `eda_summary.json` cũ chưa có các trường S3 URI, `min_len`, `max_len`, `zero_count`...).
 
-- [x] **Step 3: Xây dựng script profiling tự động kết nối cả 2 nguồn và sinh Jupyter Notebook**
-  Tạo `scripts/run_eda_profiling.py`:
-  - 5 bảng transactional: Kết nối PostgreSQL qua SQLAlchemy engine để query và profiling.
-  - 5 tệp CSV: Kết nối MinIO landing bucket qua S3 (hoặc đọc trực tiếp từ `data_prep/raw/`) bằng pandas/PyArrow.
-  - Lưu kết quả profiling chi tiết ra `docs/week02/eda_summary.json` (kèm gắn nhãn `source_type: "PostgreSQL"` hoặc `source_type: "MinIO_Landing"`).
-  - Tự động sinh `notebooks/eda_profiling.ipynb`.
+- [ ] **Step 3: Nâng cấp script profiling kết nối trực tiếp S3 & Postgres và tái tạo Notebook**
+  Cập nhật `scripts/run_eda_profiling.py`:
+  - 5 bảng transactional: Kết nối PostgreSQL qua SQLAlchemy engine để query và profiling trực tiếp.
+  - 5 tệp CSV: Kết nối MinIO landing bucket qua Boto3 S3 client (`endpoint_url='http://localhost:9000'`), stream trực tiếp vào bộ nhớ qua `s3.get_object()['Body']` mà không đọc ổ đĩa cục bộ `data_prep/raw/`.
+  - Tính toán 5 Trụ Cột Kỹ Thuật:
+    - **Pillar 1:** Schema Sizing (`min_len`, `max_len`, `avg_len` cho kiểu chuỗi).
+    - **Pillar 2:** Domain Boundaries & Anomalies (`min_value`, `max_value`, `zero_count`, `negative_count` cho kiểu số).
+    - **Pillar 3:** Temporal Boundaries (`min_date`, `max_date` cho kiểu thời gian).
+    - **Pillar 4:** Cardinality & Uniqueness Ratio (`distinct_count / row_count`).
+    - **Pillar 5:** Cross-Source Tracking (gắn nhãn `source_type` và `s3_uri`).
+  - Ghi đè file `docs/week02/eda_summary.json`.
+  - Tự động sinh `notebooks/eda_profiling.ipynb` chuẩn hóa với PySpark S3A connector (`fs.s3a.endpoint`, `fs.s3a.access.key`) và Postgres JDBC để học viên thực hành phân tán trên container `olist_spark_notebook`.
 
-- [x] **Step 4: Chạy script profiling và xác thực test**
+- [ ] **Step 4: Chạy script profiling và xác thực test xanh lá (Green Phase)**
   Run: `python scripts/run_eda_profiling.py`  
-  Run: `pytest tests/test_eda_profiling.py -v`  
-  Expected output: `PASSED` với đầy đủ 10 thực thể được profile từ 2 nguồn riêng biệt.
+  Run: `pytest tests/test_eda_profiling.py -v -s`  
+  Expected output: `PASSED` với đầy đủ 10 thực thể được đo đạc chuyên sâu.
 
-- [x] **Step 5: Git commit hoàn thiện Task 3**
+- [ ] **Step 5: Git commit hoàn thiện Task 3 nâng cấp**
   ```bash
   git add scripts/run_eda_profiling.py notebooks/eda_profiling.ipynb docs/week02/eda_summary.json tests/test_eda_profiling.py
-  git commit -m "feat(eda): implement multi-source automated profiling for postgresql and minio landing"
+  git commit -m "feat(eda): upgrade to direct s3 profiling and 5 data engineering pillars"
   ```
 
-#### 🧪 Mini-Lab 3: Soi Kính — Đọc Bảng Thống Kê 2 Nguồn
-* **Mục tiêu:** Kiểm tra bảng thống kê phân định rõ nguồn PostgreSQL và MinIO Landing.
+#### 🧪 Mini-Lab 3: Soi Kính — Khảo Sát Kích Thước Schema & Dải Giá Trị
+* **Mục tiêu:** Kiểm tra nhanh `max_len` của các trường mã định danh và `min_value` của `payment_value`.
+* **Thao tác nhanh:**
+  ```bash
+  python3 -c "import json; d=json.load(open('docs/week02/eda_summary.json')); print('Max len customer_id:', d['customers']['columns']['customer_id']['max_len']); print('Zero payments:', d['order_payments']['columns']['payment_value']['zero_count'])"
+  ```
+* **Tiêu chuẩn đạt:** Trả về `max_len = 32` và `zero_count = 9` (đúng bản chất thực tế).
 
 ---
 
@@ -470,23 +518,31 @@ olist-lakehouse/
 - Create: `docs/week02/eda_report.md`
 - Test: `tests/test_eda_findings.py`
 
-- [ ] **Step 1: Viết test kiểm tra 5 phát hiện quan hệ (Failing Test)**
+- [ ] **Step 1: Viết test kiểm tra 5 phát hiện quan hệ đa nguồn (Failing Test)**
   Tạo `tests/test_eda_findings.py`:
   Kiểm chứng 5 phát hiện với số liệu đo đạc thực tế:
-  1. **Finding 1 (Postgres):** `customer_id` bị thổi phồng so với `customer_unique_id` (99,441 vs 96,096 ~ chênh lệch 3.35%).
-  2. **Finding 2 (Cross-Source):** `order_items` trong Postgres có `product_id` không tồn tại trong `products` (MinIO Landing) -> Khoảng cách tham chiếu giữa 2 nguồn!
-  3. **Finding 3 (Postgres):** Đơn hàng thanh toán nhiều lần/nhiều phương thức (`order_payments` có đơn lên tới 29 voucher).
-  4. **Finding 4 (Postgres):** Tỷ lệ đơn giao trễ so với dự kiến (~6.7% đơn giao sau `order_estimated_delivery_date`).
-  5. **Finding 5 (MinIO Landing):** Tọa độ trùng lặp trong `geolocation` (19k zip codes nhưng có 1 triệu dòng GPS).
+  1. **Finding 1 (Postgres OLTP):** `customer_id` bị thổi phồng so với `customer_unique_id` (99,441 vs 96,096 ~ chênh lệch 3.35%).
+  2. **Finding 2 (Cross-Source Isolation):** `order_items` trong Postgres có `product_id` không tồn tại trong `products` (MinIO Landing S3). Test đọc đồng thời từ Postgres và S3 qua `boto3` để phát hiện chênh lệch tập hợp khóa (Set Difference).
+  3. **Finding 3 (Postgres OLTP):** Đơn hàng thanh toán nhiều lần/nhiều phương thức (`order_payments` có đơn lên tới 29 voucher).
+  4. **Finding 4 (Postgres OLTP):** Tỷ lệ đơn giao trễ so với dự kiến (~6.7% đơn giao sau `order_estimated_delivery_date`).
+  5. **Finding 5 (MinIO Landing S3):** Tọa độ trùng lặp trong `geolocation` (19k zip codes nhưng có 1 triệu dòng GPS).
 
-- [ ] **Step 2: Chạy test xác nhận**
+- [ ] **Step 2: Chạy test xác nhận test thất bại**
+  Run: `pytest tests/test_eda_findings.py -v -s`  
+  Expected output: `FAIL` (do `docs/week02/eda_report.md` chưa được tạo).
+
+- [ ] **Step 3: Soạn thảo báo cáo kỹ thuật `docs/week02/eda_report.md`**
+  Biên soạn tài liệu gồm 5 phát hiện, mỗi phát hiện tuân thủ 4 phần chuẩn sư phạm của Anh Tú:
+  - **Hiện tượng định lượng (Quantified Evidence):** Số liệu đo đạc chính xác từ EDA.
+  - **Nguyên nhân gốc rễ (Root Cause Analysis):** Bản chất thiết kế hệ thống nguồn (OLTP vs Third-party catalog).
+  - **Tác động nghiệp vụ (Business Impact):** Ảnh hưởng đến báo cáo GMV, LTV, hay trải nghiệm giao vận.
+  - **Giải pháp kỹ thuật Pipeline (Pipeline Action):** Hành động cụ thể ở tầng Bronze/Silver/Gold (Quarantine, Fallback SK = -1, SCD Type 2).
+
+- [ ] **Step 4: Chạy test xác nhận xanh lá**
   Run: `pytest tests/test_eda_findings.py -v -s`  
   Expected output: `PASSED` với 5 dòng thông báo số liệu thực tế được in ra.
 
-- [ ] **Step 3: Soạn thảo báo cáo kỹ thuật `docs/week02/eda_report.md`**
-  Gồm 4 phần chuẩn sư phạm: Hiện tượng định lượng ➔ Nguyên nhân gốc rễ ➔ Tác động nghiệp vụ ➔ Đề xuất giải pháp pipeline.
-
-- [ ] **Step 4: Git commit hoàn thiện Task 4**
+- [ ] **Step 5: Git commit hoàn thiện Task 4**
   ```bash
   git add docs/week02/eda_report.md tests/test_eda_findings.py
   git commit -m "docs(eda): document 5 cross-source relational findings with root causes and pipeline actions"
@@ -839,7 +895,8 @@ olist-lakehouse/
   \"\"\"
   Test thực thi tự động 5 câu truy vấn SQL hằng ngày của Tuần 02 trực tiếp trên PostgreSQL:
   1. % NULL từng cột trong bảng orders.
-  2. Tìm order_items có product_id không tồn tại trong products.
+  2. Kiểm tra toàn vẹn nội bộ: Tìm đơn hàng trong orders không có order_items (Ghost Orders).
+     (Kèm minh họa Federated SQL qua Trino kết nối Postgres + MinIO S3).
   3. Tìm các đơn hàng có nhiều hơn 1 bản ghi thanh toán.
   4. Thời gian giao hàng trung bình theo bang (dùng CTE).
   5. Tỷ lệ đơn hàng giao trễ theo từng tháng.
@@ -876,7 +933,7 @@ olist-lakehouse/
       res1 = cur.fetchone()
       assert res1 is not None and len(res1) > 0, "Query 1 không trả về kết quả!"
       
-      # Test Query 2: Orphan products
+      # Test Query 2: Ghost orders / Internal Referential Integrity
       q2 = queries[2].split(";")[0]
       cur.execute(q2)
       res2 = cur.fetchall()
@@ -930,16 +987,18 @@ olist-lakehouse/
       ROUND(100.0 * (COUNT(*) - COUNT(order_estimated_delivery_date)) / COUNT(*), 2) AS estimated_date_null_pct
   FROM orders;
 
-  -- QUERY 2: Tìm các dòng order_items có product_id không tồn tại trong bảng products (Orphan Records)
-  -- Mục tiêu: Phát hiện vi phạm toàn vẹn tham chiếu khóa ngoại trước khi nạp vào Silver.
+  -- QUERY 2: Kiểm tra toàn vẹn nội bộ: Tìm đơn hàng trong \'orders\' không có mặt hàng nào trong \'order_items\' (Ghost Orders)
+  -- Mục tiêu: Phát hiện đơn hàng bị lỗi transactional commit trước khi nạp vào Silver.
+  -- Ghi chú kiến trúc: Bảng \'products\' nằm ở MinIO Landing S3, việc kiểm tra orphan products xuyên nguồn
+  -- được thực hiện ở tầng Bronze/Silver bằng PySpark hoặc Trino Federated SQL:
+  -- SELECT oi.order_id, oi.product_id FROM postgresql.public.order_items oi LEFT JOIN minio.landing.products p ON oi.product_id = p.product_id WHERE p.product_id IS NULL;
   SELECT 
-      oi.order_id,
-      oi.order_item_id,
-      oi.product_id,
-      oi.price
-  FROM order_items oi
-  LEFT JOIN products p ON oi.product_id = p.product_id
-  WHERE p.product_id IS NULL;
+      o.order_id,
+      o.order_status,
+      o.order_purchase_timestamp
+  FROM orders o
+  LEFT JOIN order_items oi ON o.order_id = oi.order_id
+  WHERE oi.order_id IS NULL;
 
   -- QUERY 3: Tìm danh sách các đơn hàng có nhiều hơn 1 lần thanh toán (Multi-payment Orders)
   -- Mục tiêu: Phân tích các trường hợp thanh toán kết hợp nhiều thẻ hoặc chia nhỏ đợt voucher.
@@ -1056,9 +1115,15 @@ olist-lakehouse/
      - *Definition Anatomy:* Grain là mức độ chi tiết nguyên tử đại diện cho 1 dòng dữ liệu trong bảng Fact.
      - *Lựa chọn Olist:* Chọn `order_item` grain (1 dòng = 1 mặt hàng trong đơn).
      - *Why:* Đây là mức chi tiết nhất có giá (`price`) và cước ship (`freight_value`). Nếu chọn grain là đơn hàng (`order_id`), ta sẽ mất hoàn toàn khả năng phân tích đa chiều theo sản phẩm và người bán (vì một đơn có thể chứa sản phẩm của nhiều nhà bán lẻ khác nhau).
-  2. **Q2. Vì sao bắt buộc phải làm EDA trước khi viết Data Quality (DQ) Rule?**
-     - *Root Cause:* Quy tắc chất lượng dữ liệu và ngưỡng chặn (thresholds) không thể thiết kế trên lý thuyết thuần túy mà phải phản ánh trung thực bản chất dữ liệu thực tế.
-     - *Thực chứng Olist:* EDA cho thấy ~1.85% sản phẩm bị khuyết danh mục (`product_category_name IS NULL`). Nếu kỹ sư vội vàng đặt rule `NOT NULL` với mức `Critical` dừng pipeline, mẻ nạp sẽ lập tức bị crash. Làm EDA giúp DE thiết lập chính sách đúng đắn: Đặt ngưỡng dung sai 2.0% và map về `'Unknown'` ở tầng Silver.
+  2. **Q2. Phân biệt bản chất giữa EDA trong Data Engineering (DE EDA) và EDA trong Data Science (DS EDA)? Hãy phân tích 5 Trụ Cột Đo Lường của DE EDA?**
+     - *Definition Anatomy:* DE EDA là quá trình "khám nghiệm cấu trúc & ranh giới dữ liệu" (Structural & Boundary Inspection) nhằm xác lập Data Contract, Schema Sizing, Ingestion Pattern và Data Quality Rules. Ngược lại, DS EDA tập trung vào Feature Correlation, Feature Importance và phân phối xác suất để tối ưu mô hình ML.
+     - *5 Trụ Cột Kỹ Thuật (5 Pillars of DE EDA):*
+       1. Schema Sizing (min/max length chuỗi để định hình VARCHAR, chặn padding).
+       2. Domain Boundaries (min/max/zeros/negatives để bắt dị thường thanh toán, cước phí).
+       3. Temporal Consistency (thứ tự thời gian purchase -> deliver, phát hiện tương lai).
+       4. Key Distribution & Inflation (tỷ lệ unique, customer_id vs customer_unique_id).
+       5. Cross-Source Integrity (đo độ lệch khóa giữa DB OLTP và Object Storage Landing).
+     - *Thực chứng Olist:* EDA phát hiện 9 dòng `payment_value = 0` và ~1.85% sản phẩm khuyết danh mục. Nhờ đó, DE không đặt nhầm rule `NOT NULL / > 0` mức Critical làm sập pipeline, mà phân tầng xử lý sang Quarantine hoặc gán nhãn Unknown.
   3. **Q3. Tài liệu Source-to-Target Mapping (STTM) dùng để làm gì?**
      - *Definition Anatomy:* STTM là bản "hợp đồng kỹ thuật" (Data Contract) ràng buộc giữa bộ phận nghiệp vụ (DA/BI/Product) và đội ngũ kỹ thuật (DE).
      - *Giá trị thực tế:* Quy định rõ nguồn dữ liệu, quy tắc chuyển đổi (business logic), kiểu dữ liệu và độ nhạy cảm (PII). Đây là kim chỉ nam để DE viết code pipeline, QA viết test và phục vụ truy vết nguồn gốc (Data Lineage & Governance).
