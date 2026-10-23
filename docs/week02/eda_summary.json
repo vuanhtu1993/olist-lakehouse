@@ -1,0 +1,432 @@
+{
+  "orders": {
+    "source_type": "PostgreSQL",
+    "row_count": 14940,
+    "column_count": 9,
+    "columns": {
+      "order_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14940
+      },
+      "customer_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14940
+      },
+      "order_status": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 7
+      },
+      "order_purchase_timestamp": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14874
+      },
+      "order_approved_at": {
+        "data_type": "text",
+        "null_count": 42,
+        "null_pct": 0.28,
+        "distinct_count": 14501
+      },
+      "order_delivered_carrier_date": {
+        "data_type": "text",
+        "null_count": 494,
+        "null_pct": 3.31,
+        "distinct_count": 13302
+      },
+      "order_delivered_customer_date": {
+        "data_type": "text",
+        "null_count": 736,
+        "null_pct": 4.93,
+        "distinct_count": 14038
+      },
+      "order_estimated_delivery_date": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 175
+      },
+      "updated_at": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14874
+      }
+    }
+  },
+  "order_items": {
+    "source_type": "PostgreSQL",
+    "row_count": 16679,
+    "column_count": 8,
+    "columns": {
+      "order_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14743
+      },
+      "order_item_id": {
+        "data_type": "bigint",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 15
+      },
+      "product_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 7045
+      },
+      "seller_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 1013
+      },
+      "shipping_limit_date": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14513
+      },
+      "price": {
+        "data_type": "double precision",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 1881
+      },
+      "freight_value": {
+        "data_type": "double precision",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2891
+      },
+      "updated_at": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14679
+      }
+    }
+  },
+  "order_payments": {
+    "source_type": "PostgreSQL",
+    "row_count": 15870,
+    "column_count": 6,
+    "columns": {
+      "order_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14939
+      },
+      "payment_sequential": {
+        "data_type": "bigint",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 29
+      },
+      "payment_type": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 4
+      },
+      "payment_installments": {
+        "data_type": "bigint",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 17
+      },
+      "payment_value": {
+        "data_type": "double precision",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 8665
+      },
+      "updated_at": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14873
+      }
+    }
+  },
+  "customers": {
+    "source_type": "PostgreSQL",
+    "row_count": 99441,
+    "column_count": 5,
+    "columns": {
+      "customer_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 99441
+      },
+      "customer_unique_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 96096
+      },
+      "customer_zip_code_prefix": {
+        "data_type": "bigint",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 14994
+      },
+      "customer_city": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 4119
+      },
+      "customer_state": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 27
+      }
+    }
+  },
+  "customer_pii": {
+    "source_type": "PostgreSQL",
+    "row_count": 96096,
+    "column_count": 5,
+    "columns": {
+      "customer_unique_id": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 96096
+      },
+      "full_name": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 41471
+      },
+      "email": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 70051
+      },
+      "phone_number": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 96095
+      },
+      "birth_date": {
+        "data_type": "text",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 20938
+      }
+    }
+  },
+  "products": {
+    "source_type": "MinIO_Landing",
+    "row_count": 32951,
+    "column_count": 9,
+    "columns": {
+      "product_id": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 32951
+      },
+      "product_category_name": {
+        "data_type": "object",
+        "null_count": 610,
+        "null_pct": 1.85,
+        "distinct_count": 73
+      },
+      "product_name_lenght": {
+        "data_type": "float64",
+        "null_count": 610,
+        "null_pct": 1.85,
+        "distinct_count": 66
+      },
+      "product_description_lenght": {
+        "data_type": "float64",
+        "null_count": 610,
+        "null_pct": 1.85,
+        "distinct_count": 2960
+      },
+      "product_photos_qty": {
+        "data_type": "float64",
+        "null_count": 610,
+        "null_pct": 1.85,
+        "distinct_count": 19
+      },
+      "product_weight_g": {
+        "data_type": "float64",
+        "null_count": 2,
+        "null_pct": 0.01,
+        "distinct_count": 2204
+      },
+      "product_length_cm": {
+        "data_type": "float64",
+        "null_count": 2,
+        "null_pct": 0.01,
+        "distinct_count": 99
+      },
+      "product_height_cm": {
+        "data_type": "float64",
+        "null_count": 2,
+        "null_pct": 0.01,
+        "distinct_count": 102
+      },
+      "product_width_cm": {
+        "data_type": "float64",
+        "null_count": 2,
+        "null_pct": 0.01,
+        "distinct_count": 95
+      }
+    }
+  },
+  "sellers": {
+    "source_type": "MinIO_Landing",
+    "row_count": 3095,
+    "column_count": 4,
+    "columns": {
+      "seller_id": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3095
+      },
+      "seller_zip_code_prefix": {
+        "data_type": "int64",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2246
+      },
+      "seller_city": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 611
+      },
+      "seller_state": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 23
+      }
+    }
+  },
+  "order_reviews": {
+    "source_type": "MinIO_Landing",
+    "row_count": 99224,
+    "column_count": 7,
+    "columns": {
+      "review_id": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 98410
+      },
+      "order_id": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 98673
+      },
+      "review_score": {
+        "data_type": "int64",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 5
+      },
+      "review_comment_title": {
+        "data_type": "object",
+        "null_count": 87656,
+        "null_pct": 88.34,
+        "distinct_count": 4527
+      },
+      "review_comment_message": {
+        "data_type": "object",
+        "null_count": 58247,
+        "null_pct": 58.7,
+        "distinct_count": 36159
+      },
+      "review_creation_date": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 636
+      },
+      "review_answer_timestamp": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 98248
+      }
+    }
+  },
+  "geolocation": {
+    "source_type": "MinIO_Landing",
+    "row_count": 1000163,
+    "column_count": 5,
+    "columns": {
+      "geolocation_zip_code_prefix": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 19015
+      },
+      "geolocation_lat": {
+        "data_type": "float64",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 717363
+      },
+      "geolocation_lng": {
+        "data_type": "float64",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 717615
+      },
+      "geolocation_city": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 8011
+      },
+      "geolocation_state": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 27
+      }
+    }
+  },
+  "product_category_name_translation": {
+    "source_type": "MinIO_Landing",
+    "row_count": 71,
+    "column_count": 2,
+    "columns": {
+      "product_category_name": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 71
+      },
+      "product_category_name_english": {
+        "data_type": "object",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 71
+      }
+    }
+  }
+}

@@ -408,7 +408,7 @@ olist-lakehouse/
 - Create: `scripts/run_eda_profiling.py`
 - Test: `tests/test_eda_profiling.py`
 
-- [ ] **Step 1: Viết test kiểm tra kết quả EDA profiling (Failing Test)**
+- [x] **Step 1: Viết test kiểm tra kết quả EDA profiling (Failing Test)**
   Tạo `tests/test_eda_profiling.py`:
   ```python
   # tests/test_eda_profiling.py
@@ -436,23 +436,23 @@ olist-lakehouse/
               assert "null_pct" in stats and "distinct_count" in stats
   ```
 
-- [ ] **Step 2: Chạy test để xác nhận test thất bại**
+- [x] **Step 2: Chạy test để xác nhận test thất bại**
   Run: `pytest tests/test_eda_profiling.py -v`  
   Expected output: `FAIL`.
 
-- [ ] **Step 3: Xây dựng script profiling tự động kết nối cả 2 nguồn và sinh Jupyter Notebook**
+- [x] **Step 3: Xây dựng script profiling tự động kết nối cả 2 nguồn và sinh Jupyter Notebook**
   Tạo `scripts/run_eda_profiling.py`:
   - 5 bảng transactional: Kết nối PostgreSQL qua SQLAlchemy engine để query và profiling.
   - 5 tệp CSV: Kết nối MinIO landing bucket qua S3 (hoặc đọc trực tiếp từ `data_prep/raw/`) bằng pandas/PyArrow.
   - Lưu kết quả profiling chi tiết ra `docs/week02/eda_summary.json` (kèm gắn nhãn `source_type: "PostgreSQL"` hoặc `source_type: "MinIO_Landing"`).
   - Tự động sinh `notebooks/eda_profiling.ipynb`.
 
-- [ ] **Step 4: Chạy script profiling và xác thực test**
+- [x] **Step 4: Chạy script profiling và xác thực test**
   Run: `python scripts/run_eda_profiling.py`  
   Run: `pytest tests/test_eda_profiling.py -v`  
   Expected output: `PASSED` với đầy đủ 10 thực thể được profile từ 2 nguồn riêng biệt.
 
-- [ ] **Step 5: Git commit hoàn thiện Task 3**
+- [x] **Step 5: Git commit hoàn thiện Task 3**
   ```bash
   git add scripts/run_eda_profiling.py notebooks/eda_profiling.ipynb docs/week02/eda_summary.json tests/test_eda_profiling.py
   git commit -m "feat(eda): implement multi-source automated profiling for postgresql and minio landing"
