@@ -2,13 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Hiểu sâu sắc bản chất dữ liệu thương mại điện tử Olist thông qua Phân tích Khám phá Dữ liệu (Exploratory Data Analysis - EDA) có hệ thống, từ đó xây dựng trọn bộ 7 tài liệu thiết kế kỹ thuật chuẩn công nghiệp (Requirements, EDA Profiling, Relational Findings Report, Design Document, Star Schema Data Model, Source-to-Target Mapping STTM, Data Quality Catalog) trước khi bắt tay viết code pipeline Bronze Ingestion. Đây là bước then chốt phân biệt một Kỹ sư Dữ liệu (Data Engineer) "biết tư duy kiến trúc" với người chỉ "biết gõ lệnh".
+**Goal:** Hiểu sâu sắc bản chất dữ liệu thương mại điện tử Olist thông qua Phân tích Khám phá Dữ liệu (Exploratory Data Analysis - EDA) có hệ thống trên kiến trúc Đa Nguồn (Multi-Source: PostgreSQL OLTP + MinIO Landing CSV), từ đó xây dựng trọn bộ 7 tài liệu thiết kế kỹ thuật chuẩn công nghiệp (Requirements, EDA Profiling, Relational Findings Report, Design Document, Star Schema Data Model, Source-to-Target Mapping STTM, Data Quality Catalog) trước khi bắt tay viết code pipeline Bronze Ingestion. Đây là bước then chốt phân biệt một Kỹ sư Dữ liệu (Data Engineer) "biết tư duy kiến trúc" với người chỉ "biết gõ lệnh".
 
-**Architecture:** Mở rộng cơ sở dữ liệu tác nghiệp PostgreSQL để nạp đầy đủ toàn bộ 10 bảng dữ liệu Olist (bao gồm 9 bảng gốc Kaggle và bảng `customer_pii` giả lập sinh ở Tuần 01). Tận dụng môi trường tính toán cục bộ để thực thi phân tích thống kê đa chiều bằng SQL trực tiếp trên PostgreSQL và Jupyter Notebook (pandas / PyArrow). Kết quả EDA là căn cứ định lượng (quantified evidence) để xác định Load Pattern, khóa định danh (Business Key), lược đồ hình sao Gold (Fact Order Item grain) và bộ quy tắc kiểm soát chất lượng dữ liệu (Data Quality Rule Catalog).
+**Architecture:** Tuân thủ chặt chẽ kiến trúc tích hợp dữ liệu đa nguồn chuẩn Enterprise Lakehouse:
+1. **Nguồn 1: PostgreSQL OLTP Database:** Lưu trữ đúng **5 bảng transactional/CRM** của mẻ khởi đầu B0 (`orders`, `order_items`, `order_payments`, `customers`, `customer_pii`). Tuyệt đối không nạp các tệp tham chiếu hay tệp dữ liệu bên ngoài vào database OLTP của hệ thống bán hàng.
+2. **Nguồn 2: MinIO S3 Object Storage (`s3://landing/`):** Lưu trữ **5 tệp CSV** danh mục tham chiếu và đánh giá (`products`, `sellers`, `order_reviews`, `geolocation`, `product_category_name_translation`).
+3. **Môi trường EDA:** Sử dụng Jupyter Notebook (`notebooks/eda_profiling.ipynb`) tích hợp `pandas`, `SQLAlchemy`, và `PyArrow` / `boto3` để profile đồng thời cả 2 nguồn (PostgreSQL và MinIO Landing), thực hiện các phép kiểm thử toàn vẹn quan hệ chéo nguồn (Cross-source relational checks) nhằm phát hiện khóa ngoại mồ côi (Orphan IDs). Kết quả EDA là căn cứ định lượng (quantified evidence) để xác định Load Pattern, khóa định danh (Business Key), lược đồ hình sao Gold (Fact Order Item grain) và bộ quy tắc kiểm soát chất lượng dữ liệu (Data Quality Rule Catalog).
 
-**Tech Stack:** PostgreSQL 16 (OLTP & SQL Profiling Engine), Python 3.10+ (pandas, PyArrow, psycopg2-binary, SQLAlchemy, pytest), Jupyter Notebook (`notebooks/eda_profiling.ipynb`), Mermaid.js (ERD & Data Flow Visualizations), Markdown (Documentation-as-Code).
+**Tech Stack:** PostgreSQL 16 (OLTP Database), MinIO S3 Object Storage (Landing Bucket), Python 3.10+ (pandas, PyArrow, psycopg2-binary, boto3, SQLAlchemy, pytest), Jupyter Notebook (`notebooks/eda_profiling.ipynb`), Mermaid.js (ERD & Data Flow Visualizations), Markdown (Documentation-as-Code).
 
-**Syllabus Source:** [lab_syllabus_v2/week02.md](file:///Users/anhtus/Documents/Development/DE/GRT_DA-DE/lab_syllabus_v2/week02.md)
+**Syllabus Source:** [lab_syllabus_v2/week02.md](file:///Users/anhtus/Documents/Development/DE/GRT_DA-DE/lab_syllabus_v2/week02.md) & [lab_syllabus_v2/00_PROJECT_OVERVIEW.md](file:///Users/anhtus/Documents/Development/DE/GRT_DA-DE/lab_syllabus_v2/00_PROJECT_OVERVIEW.md)
 
 ---
 
@@ -16,36 +19,44 @@
 
 Trước khi bắt tay vào thiết kế đường ống dữ liệu (data pipeline), một kỹ sư dữ liệu chuyên nghiệp luôn bắt đầu bằng việc mổ xẻ các khái niệm nền tảng.
 
-### 1. Giải phẫu khái niệm: Bronze Layer — Ingest As-Is (1:1)
+### 1. Giải phẫu khái niệm: Bronze Layer — Ingest As-Is (1:1) từ Đa Nguồn (Multi-Source)
 > **Định nghĩa chuẩn học thuật:**  
-> **Bronze Layer** (tầng Đồng / Raw Layer) trong kiến trúc Medallion là *lớp lưu trữ nguyên bản bất biến (immutable raw landing layer)* ghi nhận dữ liệu từ các hệ thống nguồn (OLTP, File, API, Event Streams) ở trạng thái trung thực nhất có thể (tỷ lệ 1:1), tuyệt đối không áp dụng các phép biến đổi nghiệp vụ (no business transformations), không ép kiểu (no schema casting), không đổi tên cột (no renaming), và không lọc bỏ dòng (no filtering). Ngoại lệ duy nhất được phép xử lý ngay tại tầng này là mã hóa bảo vệ thông tin định danh cá nhân (PII Masking).
+> **Bronze Layer** (tầng Đồng / Raw Layer) trong kiến trúc Medallion là *lớp lưu trữ nguyên bản bất biến (immutable raw landing layer)* ghi nhận dữ liệu từ các hệ thống nguồn không đồng nhất (Heterogeneous Source Systems: RDBMS OLTP, Object Storage Files, APIs, Event Streams) ở trạng thái trung thực nhất có thể (tỷ lệ 1:1), tuyệt đối không áp dụng các phép biến đổi nghiệp vụ (no business transformations), không ép kiểu (no schema casting), không đổi tên cột (no renaming), và không lọc bỏ dòng (no filtering). Ngoại lệ duy nhất được phép xử lý ngay tại tầng này là mã hóa bảo vệ thông tin định danh cá nhân (PII Masking).
 
 ```mermaid
 flowchart LR
-    subgraph SourceSystem ["Hệ thống Nguồn (OLTP / File CSV)"]
-        SRC["Raw Records<br/>• Kiểu dữ liệu gốc (String/Text)<br/>• Có thể chứa lỗi, NULL, Duplicate<br/>• Chứa PII (Email, Phone)"]
-    end
-
-    subgraph BronzeIngest ["Quy trình Bronze Ingestion"]
+    subgraph Source1 ["Nguồn 1: PostgreSQL OLTP"]
         direction TB
-        ASIS["Nguyên tắc As-Is (1:1)<br/>• Giữ nguyên cấu trúc<br/>• Không sửa lỗi dữ liệu<br/>• Không ép kiểu nghiệp vụ"]
-        PII["Ngoại lệ: PII Masking<br/>HMAC-SHA256 (Salted Token)"]
-        META["Bổ sung Technical Metadata<br/>• _ingest_timestamp<br/>• _source_file_name<br/>• _batch_id<br/>• _record_hash<br/>• _is_current"]
+        PG["5 Bảng Giao Dịch B0<br/>• orders, order_items<br/>• order_payments<br/>• customers, customer_pii"]
     end
 
-    subgraph BronzeStorage ["Tầng Bronze (Apache Iceberg)"]
-        BRZ["Bảng Bronze Immutable<br/>• Lưu trữ dạng Parquet<br/>• Toàn bộ lịch sử nạp dữ liệu<br/>• Khả năng Time Travel & Replay"]
+    subgraph Source2 ["Nguồn 2: MinIO s3://landing/"]
+        direction TB
+        CSV["5 Tệp Tin CSV<br/>• products, sellers<br/>• order_reviews<br/>• geolocation<br/>• category_translation"]
     end
 
-    SRC --> BronzeIngest
-    ASIS --> BRZ
-    PII --> BRZ
-    META --> BRZ
+    subgraph BronzeIngest ["Quy trình Bronze Ingestion (Tuần 03)"]
+        direction TB
+        R1["Spark JDBC Ingest"]
+        R2["Spark File/S3 Ingest"]
+        PII["Ngoại lệ: PII Masking (HMAC-SHA256)"]
+        META["Bổ sung 5 Cột Technical Metadata<br/>• _ingest_timestamp<br/>• _source_file_name<br/>• _batch_id<br/>• _record_hash<br/>• _is_current"]
+    end
+
+    subgraph BronzeStorage ["Tầng Bronze (Apache Iceberg trên MinIO)"]
+        BRZ["10 Bảng Bronze Iceberg<br/>• Lưu trữ Parquet mở<br/>• Audit trail nguyên bản<br/>• Time Travel & Replay"]
+    end
+
+    Source1 --> R1 --> BronzeIngest
+    Source2 --> R2 --> BronzeIngest
+    PII --> BronzeStorage
+    META --> BronzeStorage
 ```
 
 * **Anatomical Keywords (Giải phẫu từ khóa):**
-  * **As-Is (Nguyên trạng):** Dữ liệu nguồn như thế nào, tầng Bronze lưu đúng như vậy. Nếu nguồn gửi chuỗi `"N/A"` vào cột ngày tháng, Bronze lưu nguyên chuỗi `"N/A"`, không tự ý ép sang NULL hay giá trị mặc định. Nếu ép kiểu sớm, khi việc ép kiểu thất bại (parse exception), pipeline sẽ bị crash hoặc dữ liệu bị biến đổi làm mất đi vết tích gốc.
-  * **Auditability & Traceability (Khả năng kiểm toán & truy vết):** Bronze đóng vai trò là "hiện trường vụ án" nguyên vẹn. Nếu tầng Silver hay Gold phía sau tính sai số liệu do logic code bị lỗi, ta luôn có thể xóa tầng Silver/Gold và chạy lại toàn bộ từ Bronze (Recompute / Replay) mà không cần gọi lại hệ thống nguồn.
+  * **As-Is (Nguyên trạng):** Dữ liệu nguồn như thế nào, tầng Bronze lưu đúng như vậy. Cả 2 nguồn (bảng SQL từ PostgreSQL và tệp CSV từ MinIO) đều được giữ nguyên vẹn cấu trúc và giá trị gốc khi đưa vào Bronze Iceberg table.
+  * **Heterogeneous Ingestion (Nạp dữ liệu không đồng nhất):** Một kiến trúc Lakehouse hiện đại phải có năng lực hợp nhất cả dữ liệu có cấu trúc từ cơ sở dữ liệu quan hệ (RDBMS) lẫn dữ liệu bán cấu trúc/tệp tin từ Object Storage vào một giao diện lưu trữ duy nhất.
+  * **Auditability & Traceability (Khả năng kiểm toán & truy vết):** Bronze đóng vai trò là "hiện trường vụ án" nguyên vẹn. Khi xảy ra sự cố sai lệch số liệu ở Silver hay Gold, DE luôn có thể tái xử lý (Replay) từ Bronze mà không cần chạm lại vào database OLTP đang phục vụ người dùng.
   * **Technical Metadata Columns (Siêu dữ liệu kỹ thuật):** Bronze bổ sung 5 cột kỹ thuật phục vụ vận hành:
     1. `_ingest_timestamp`: Thời điểm bản ghi được ghi nhận vào Data Lakehouse (UTC).
     2. `_source_file_name`: Tên tệp tin nguồn hoặc bảng nguồn sản sinh bản ghi.
@@ -82,8 +93,8 @@ sequenceDiagram
 ```
 
 * **Root Cause Analysis (Tại sao dùng SHA-256 Record Hash thay vì so sánh từng cột?):**
-  * *Quá khứ:* Trong các kho dữ liệu cổ điển, việc kiểm tra xem một dòng có thay đổi hay không đòi hỏi viết các câu lệnh SQL khổng lồ: `WHERE t.col1 <> s.col1 OR t.col2 <> s.col2 OR (t.col3 IS NULL AND s.col3 IS NOT NULL)...`. Khi bảng có 50-100 cột, câu lệnh này cực kỳ tốn CPU, dễ sót cột và xử lý NULL vô cùng phức tạp.
-  * *Giải pháp:* Gom toàn bộ giá trị các cột thành 1 chuỗi chuẩn hóa duy nhất và tính mã băm SHA-256 (32 bytes). Việc so sánh trạng thái của 100 cột quy về một phép so sánh bằng chuỗi đơn giản: `t._record_hash = s._record_hash`.
+  * *Quá khứ:* Trước đây, việc kiểm tra xem một dòng có thay đổi hay không đòi hỏi viết các câu lệnh so sánh khổng lồ: `WHERE t.col1 <> s.col1 OR t.col2 <> s.col2 OR (t.col3 IS NULL AND s.col3 IS NOT NULL)...`. Khi bảng có hàng chục cột, logic này cực kỳ tốn CPU, dễ sót cột và xử lý NULL rất phức tạp.
+  * *Giải pháp:* Gom toàn bộ giá trị các cột thành 1 chuỗi chuẩn hóa duy nhất và tính mã băm SHA-256 (32 bytes). Việc so sánh trạng thái của cả dòng quy về một phép so sánh bằng chuỗi đơn giản: `t._record_hash = s._record_hash`.
 
 ---
 
@@ -108,13 +119,19 @@ graph TD
 
 ## ⚖️ PHÂN TÍCH ĐÁNH ĐỔI & TƯ DUY PHẢN BIỆN (TRADE-OFFS & CRITICAL THINKING)
 
-1. **HMAC-SHA256 có Salted Secret Key vs. SHA-256 Trần (Raw Hash):**
+1. **Phân Tách Ranh Giới Hai Nguồn (PostgreSQL vs. MinIO Landing) vs. Nạp Chung Vào PostgreSQL:**
+   * *Bối cảnh:* Lựa chọn nơi lưu trữ và công cụ thực hiện EDA trong Tuần 02.
+   * *Đánh đổi:* 
+     - Gom cả 10 bảng vào PostgreSQL: Tiện lợi khi viết câu lệnh SQL thuần túy (vì tất cả nằm chung 1 database). Nhưng vi phạm nghiêm trọng nguyên tắc thiết kế thực tế: Data Engineer không bao giờ tải file CSV đối tác (như Geolocation 1 triệu dòng) nạp vào production database OLTP của công ty.
+     - Phân định rõ 2 nguồn (Postgres 5 bảng, MinIO Landing 5 tệp): Phản ánh trung thực 100% bài toán doanh nghiệp. Đòi hỏi môi trường phân tích (Jupyter Notebook / Python / PySpark) phải kết nối linh hoạt tới cả RDBMS lẫn Object Storage, từ đó rèn luyện năng lực Cross-source Profiling cho học viên.
+
+2. **HMAC-SHA256 có Salted Secret Key vs. SHA-256 Trần (Raw Hash):**
    * *Bối cảnh:* Bảo vệ dữ liệu cá nhân (PII) như email và số điện thoại khách hàng.
    * *Đánh đổi:* 
      - Dùng SHA-256 trần: Không cần quản lý mật mã, ai cũng hash được. Nhưng do không gian email/SĐT rất nhỏ, kẻ tấn công có thể tạo bảng tra cứu trước (Rainbow Table Attack) để giải mã toàn bộ danh tính khách hàng trong vài giây.
      - Dùng HMAC-SHA256 với Secret Key: Cần xây dựng cơ chế quản lý và luân chuyển khóa bí mật (Key Rotation & Storage). Đổi lại, kể cả khi kẻ tấn công có được bảng Bronze và thuật toán, nếu không có Secret Key thì không thể nào giải mã ngược. Đồng thời, do tính chất tất định (deterministic), cùng một email và cùng một key luôn sinh ra cùng một mã token, cho phép các engine nối (JOIN) và khử trùng lặp (Deduplicate) an toàn tuyệt đối.
 
-2. **EDA Trước Khi Viết DQ Rules vs. Viết DQ Rules Theo Cảm Tính:**
+3. **EDA Trước Khi Viết DQ Rules vs. Viết DQ Rules Theo Cảm Tính:**
    * *Bối cảnh:* Thiết lập ngưỡng chặn (thresholds) cho Data Quality pipeline.
    * *Đánh đổi:* Nếu viết DQ rules trước khi khám phá dữ liệu (ví dụ áp đặt rule: `product_category_name IS NOT NULL` với mức `Critical` dừng pipeline), hệ thống sẽ gãy ngay mẻ đầu tiên vì thực tế Olist có ~1.85% sản phẩm không có danh mục. Việc làm EDA cung cấp số liệu thực tế để thiết lập chính sách xử lý hợp lý: Cho phép tỷ lệ null ≤ 2.0% và gán danh mục về `'Unknown'`.
 
@@ -129,8 +146,8 @@ olist-lakehouse/
 │   │   └── 08-week01-interview-cheatsheet.md  # Cheatsheet tổng hợp Tuần 01
 │   └── week02/                                # BỘ TÀI LIỆU LAB M1 TUẦN 02
 │       ├── requirements.md                    # Bước 1: 3 User Stories + Acceptance Criteria
-│       ├── eda_report.md                      # Bước 3: Báo cáo ≥5 phát hiện quan hệ có số liệu
-│       ├── design.md                          # Bước 4: Load pattern matrix & Business keys
+│       ├── eda_report.md                      # Bước 3: Báo cáo ≥5 phát hiện quan hệ có số liệu (Cross-source)
+│       ├── design.md                          # Bước 4: Load pattern matrix & Business keys (Khớp 00_PROJECT_OVERVIEW)
 │       ├── data_model.md                      # Bước 5: Star schema ERD & Grain defense
 │       ├── sttm.md                            # Bước 6: Source-to-Target Mapping
 │       ├── dq_catalog.md                      # Bước 7: Data Quality Rule Catalog
@@ -138,12 +155,12 @@ olist-lakehouse/
 │       ├── interview_cheatsheet.md            # 5 câu hỏi phỏng vấn chuyên sâu Tuần 02
 │       └── theory_bronze_layer.md             # Khái niệm lý thuyết 11-20
 ├── notebooks/
-│   └── eda_profiling.ipynb                    # Bước 2: Jupyter Notebook profiling 10 bảng
+│   └── eda_profiling.ipynb                    # Bước 2: Jupyter Notebook profiling 10 thực thể (Postgres + MinIO)
 ├── tests/
-│   ├── test_all_tables_seeded.py              # Test kiểm tra đủ 10 bảng Olist trong Postgres
+│   ├── test_sources_ready.py                  # Test kiểm tra 5 bảng Postgres + 5 tệp MinIO Landing sẵn sàng
 │   ├── test_requirements_spec.py              # Test xác thực định dạng requirements.md
 │   ├── test_eda_profiling.py                  # Test kiểm tra tính đầy đủ của kết quả profiling
-│   ├── test_eda_findings.py                   # Test kiểm tra 5 phát hiện quan hệ bằng SQL
+│   ├── test_eda_findings.py                   # Test kiểm tra 5 phát hiện quan hệ bằng kiểm thử tự động
 │   ├── test_design_doc.py                     # Test kiểm tra tính toàn vẹn của design.md
 │   ├── test_data_model.py                     # Test kiểm tra Mermaid ERD và grain
 │   ├── test_sttm.py                           # Test kiểm tra ma trận ánh xạ STTM
@@ -161,88 +178,102 @@ olist-lakehouse/
 
 ## 🛠️ KẾ HOẠCH HÀNH ĐỘNG CHI TIẾT (BITE-SIZED TASK BREAKDOWN)
 
-
-### Task 1: Nạp Đủ 10 Bảng Olist Vào PostgreSQL (OLTP Seeding Extension)
-**Phụ thuộc:** Hạ tầng Docker Tuần 01 đang chạy (`olist_postgres`)  
+### Task 1: Chuẩn Hóa & Kiểm Thử Hạ Tầng Hai Nguồn Dữ Liệu (PostgreSQL 5 Bảng + MinIO Landing 5 Tệp CSV)
+**Phụ thuộc:** Hạ tầng Docker Tuần 01 đang chạy (`olist_minio`, Supabase PostgreSQL)  
 **WBS:** WP2.1 | **Syllabus:** Lab M1 Input  
 **Files:**
-- Create: `tests/test_all_tables_seeded.py`
-- Modify: `data_prep/seed_postgres.py`
+- Create: `tests/test_sources_ready.py`
+- Modify: `data_prep/seed_postgres.py` (chỉ nạp 5 bảng transactional B0, dọn sạch bảng thừa)
+- Modify: `data_prep/upload_to_landing.py` (bổ sung upload `olist_order_reviews_dataset.csv` lên MinIO landing)
 
-- [x] **Step 1: Viết test kiểm tra đủ 10 bảng Olist trong PostgreSQL (Failing Test)**
-  Tạo tệp `tests/test_all_tables_seeded.py`:
+- [x] **Step 1: Viết test kiểm tra tính sẵn sàng của 2 nguồn dữ liệu (Failing Test)**
+  Tạo tệp `tests/test_sources_ready.py`:
   ```python
-  # tests/test_all_tables_seeded.py
+  # tests/test_sources_ready.py
   \"\"\"
-  Test kiểm thử cơ sở dữ liệu OLTP PostgreSQL đã được nạp đủ toàn bộ 10 bảng Olist
-  phục vụ cho công tác EDA toàn diện trong Lab M1.
+  Test kiểm thử hạ tầng 2 nguồn dữ liệu chuẩn Enterprise Lakehouse:
+  1. Nguồn 1 (PostgreSQL OLTP): Đúng 5 bảng transactional (orders, order_items, order_payments, customers, customer_pii)
+     và tuyệt đối KHÔNG chứa các bảng reference/file bên ngoài.
+  2. Nguồn 2 (MinIO Object Storage): Bucket landing chứa đủ 5 tệp CSV (products, sellers, reviews, geolocation, translation).
   Tác giả: Anh Tú (Pedagogical Approach)
+  Made by Anh Tu - Share to be share
   \"\"\"
   import os
+  import boto3
   import psycopg2
+  from botocore.client import Config
   from dotenv import load_dotenv
 
   load_dotenv()
 
-  def get_connection():
-      return psycopg2.connect(
+  def test_postgres_oltp_sources():
+      \"\"\"Kiểm tra PostgreSQL chỉ chứa đúng 5 bảng transactional, không chứa bảng file ngoài\"\"\"
+      conn = psycopg2.connect(
           host=os.getenv("POSTGRES_HOST", "localhost"),
           port=int(os.getenv("POSTGRES_PORT", 5432)),
           user=os.getenv("POSTGRES_USER", "postgres"),
           password=os.getenv("POSTGRES_PASSWORD", "olist-lakehouse"),
           dbname=os.getenv("POSTGRES_DB", "postgres")
       )
-
-  def test_all_10_tables_seeded():
-      \"\"\"Kiểm tra toàn bộ 10 bảng Olist tồn tại và có dữ liệu > 0 dòng\"\"\"
-      conn = get_connection()
       cur = conn.cursor()
       
-      expected_tables = [
-          "orders", "order_items", "order_payments", "customers", "customer_pii",
-          "products", "sellers", "order_reviews", "geolocation", "product_category_name_translation"
+      expected_oltp_tables = ["orders", "order_items", "order_payments", "customers", "customer_pii"]
+      forbidden_tables = ["products", "sellers", "order_reviews", "geolocation", "product_category_name_translation"]
+      
+      print("\\n[SOURCE 1: POSTGRESQL OLTP] Kiểm tra 5 bảng transactional:")
+      for t in expected_oltp_tables:
+          cur.execute(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '{t}');")
+          exists = cur.fetchone()[0]
+          assert exists, f"Bảng transactional '{t}' phải tồn tại trong PostgreSQL!"
+          cur.execute(f"SELECT COUNT(*) FROM {t};")
+          cnt = cur.fetchone()[0]
+          assert cnt > 0, f"Bảng '{t}' không được rỗng!"
+          print(f"  ✔ Bảng {t:<20}: {cnt:>8,} dòng")
+          
+      for ft in forbidden_tables:
+          cur.execute(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '{ft}');")
+          exists = cur.fetchone()[0]
+          assert not exists, f"VI PHẠM KIẾN TRÚC: Bảng file/reference '{ft}' không được lưu trong PostgreSQL OLTP!"
+          
+      conn.close()
+
+  def test_minio_landing_sources():
+      \"\"\"Kiểm tra MinIO bucket 'landing' có đầy đủ 5 tệp CSV nguồn\"\"\"
+      endpoint = "http://minio:9000" if os.path.exists("/.dockerenv") else "http://localhost:9000"
+      s3 = boto3.client(
+          's3',
+          endpoint_url=endpoint,
+          aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "minioadmin"),
+          aws_secret_key=os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin"),
+          config=Config(signature_version='s3v4'),
+          region_name='us-east-1'
+      )
+      
+      expected_objects = [
+          "ref/olist_products_dataset.csv",
+          "ref/olist_sellers_dataset.csv",
+          "ref/olist_geolocation_dataset.csv",
+          "ref/product_category_name_translation.csv",
+          "reviews/olist_order_reviews_dataset.csv"
       ]
       
-      counts = {}
-      for t in expected_tables:
-          cur.execute(f\"\"\"
-              SELECT EXISTS (
-                  SELECT FROM information_schema.tables 
-                  WHERE table_schema = 'public' AND table_name = '{t}'
-              );
-          \"\"\")
-          exists = cur.fetchone()[0]
-          assert exists, f"LỖI: Bảng '{t}' chưa được tạo trong PostgreSQL!"
-          
-          cur.execute(f"SELECT count(*) FROM {t};")
-          count = cur.fetchone()[0]
-          counts[t] = count
-          assert count > 0, f"LỖI: Bảng '{t}' tồn tại nhưng không có dữ liệu (0 dòng)!"
-      
-      print("\\n[POSTGRES SEED CHECK] Số lượng bản ghi 10 bảng Olist:")
-      for t, c in counts.items():
-          print(f"  ✔ Bảng {t:<35}: {c:>8,} dòng")
-      
-      conn.close()
+      print("\\n[SOURCE 2: MINIO S3 LANDING] Kiểm tra 5 tệp CSV:")
+      for key in expected_objects:
+          response = s3.head_object(Bucket="landing", Key=key)
+          size = response['ContentLength']
+          assert size > 0, f"Tệp s3://landing/{key} bị rỗng (0 bytes)!"
+          print(f"  ✔ s3://landing/{key:<45}: {size:>10,} bytes")
   ```
 
 - [x] **Step 2: Chạy test để xác nhận test thất bại (Red Phase)**
-  Run: `pytest tests/test_all_tables_seeded.py -v`  
-  Expected output: `FAIL` với lỗi `Bảng 'products' chưa được tạo trong PostgreSQL!` (do Tuần 01 mới chỉ nạp 5 bảng transactional).
+  Run: `pytest tests/test_sources_ready.py -v`  
+  Expected output: `FAIL` (do Postgres vẫn còn các bảng thừa hoặc MinIO thiếu tệp reviews).
 
-- [x] **Step 3: Cập nhật `data_prep/seed_postgres.py` để nạp đủ 10 bảng (Green Phase)**
-  Cập nhật file `data_prep/seed_postgres.py` mở rộng nạp thêm 5 bảng danh mục và bổ trợ:
+- [x] **Step 3: Chuẩn hóa lại `seed_postgres.py` và bổ sung upload `upload_to_landing.py` (Green Phase)**
+  1. Cập nhật `data_prep/seed_postgres.py` chỉ nạp đúng 5 bảng transactional:
   ```python
   # data_prep/seed_postgres.py
-  \"\"\"
-  Script nạp toàn bộ 10 bảng dữ liệu Olist vào PostgreSQL phục vụ EDA Tuần 02.
-  Gồm: 5 bảng transactional (orders, items, payments, customers, customer_pii)
-  và 5 bảng reference/support (products, sellers, reviews, geolocation, translation).
-  Tác giả: Anh Tú (Pedagogical Approach)
-  \"\"\"
-  import os
-  import time
-  import pandas as pd
+  import os, time, pandas as pd
   from sqlalchemy import create_engine, text
   from dotenv import load_dotenv
 
@@ -254,16 +285,11 @@ olist-lakehouse/
       host = os.getenv("POSTGRES_HOST", "localhost")
       port = os.getenv("POSTGRES_PORT", "5432")
       dbname = os.getenv("POSTGRES_DB", "postgres")
-      url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
-      return create_engine(url)
+      return create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}")
 
   def seed_database():
       engine = get_engine()
-      start_time = time.time()
-      print("=" * 65)
-      print("🚀 BẮT ĐẦU NẠP ĐẦY ĐỦ 10 BẢNG DỮ LIỆU OLIST VÀO POSTGRESQL")
-      print("=" * 65)
-
+      print("🚀 NẠP ĐÚNG 5 BẢNG TRANSACTIONAL VÀO POSTGRESQL OLTP...")
       with engine.begin() as conn:
           conn.execute(text(\"\"\"
               DROP TABLE IF EXISTS order_audit_logs CASCADE;
@@ -278,58 +304,49 @@ olist-lakehouse/
               DROP TABLE IF EXISTS geolocation CASCADE;
               DROP TABLE IF EXISTS product_category_name_translation CASCADE;
           \"\"\"))
-      print("  ✔ Đã dọn dẹp các bảng cũ.")
-
-      table_sources = [
+      
+      tables = [
           ("orders", "data_prep/processed/batch_B0/orders.csv"),
           ("order_items", "data_prep/processed/batch_B0/order_items.csv"),
           ("order_payments", "data_prep/processed/batch_B0/order_payments.csv"),
           ("customers", "data_prep/raw/olist_customers_dataset.csv"),
           ("customer_pii", "data_prep/processed/customer_pii.csv"),
-          ("products", "data_prep/raw/olist_products_dataset.csv"),
-          ("sellers", "data_prep/raw/olist_sellers_dataset.csv"),
-          ("order_reviews", "data_prep/raw/olist_order_reviews_dataset.csv"),
-          ("geolocation", "data_prep/raw/olist_geolocation_dataset.csv"),
-          ("product_category_name_translation", "data_prep/raw/product_category_name_translation.csv"),
       ]
-
-      for idx, (tbl_name, file_path) in enumerate(table_sources, 1):
-          print(f"[{idx}/10] Đang nạp bảng '{tbl_name}' từ {file_path}...")
-          df = pd.read_csv(file_path)
-          df.to_sql(tbl_name, engine, if_exists="replace", index=False, chunksize=5000, method="multi")
-          print(f"  ✔ Nạp thành công {len(df):,} dòng vào '{tbl_name}'.")
-
-      elapsed = time.time() - start_time
-      print("=" * 65)
-      print(f"🎉 NẠP THÀNH CÔNG TOÀN BỘ 10 BẢNG VÀO POSTGRES TRONG {elapsed:.1f}S!")
-      print("=" * 65)
-
-  if __name__ == "__main__":
-      seed_database()
+      raw_conn = engine.raw_connection()
+      try:
+          for tbl, path in tables:
+              df = pd.read_csv(path, nrows=10)
+              df.head(0).to_sql(tbl, engine, if_exists="replace", index=False)
+              with raw_conn.cursor() as cur:
+                  with open(path, "r", encoding="utf-8") as f:
+                      cur.copy_expert(f"COPY {tbl} FROM STDIN WITH (FORMAT csv, HEADER true)", f)
+                  raw_conn.commit()
+                  cur.execute(f"SELECT COUNT(*) FROM {tbl};")
+                  print(f"  ✔ Bảng {tbl}: {cur.fetchone()[0]:,} dòng")
+      finally:
+          raw_conn.close()
   ```
+  2. Cập nhật `data_prep/upload_to_landing.py` bổ sung upload `olist_order_reviews_dataset.csv` lên `s3://landing/reviews/`.
+  3. Chạy `python data_prep/seed_postgres.py` và `python data_prep/upload_to_landing.py`.
 
-- [x] **Step 4: Chạy nạp dữ liệu và kiểm thử lại (Green Phase Verification)**
-  Run: `python data_prep/seed_postgres.py`  
-  Run: `pytest tests/test_all_tables_seeded.py -v -s`  
-  Expected output: `PASSED` với đầy đủ 10 bảng và số lượng dòng hiển thị chi tiết.
+- [x] **Step 4: Chạy test xác nhận xanh lá (Green Phase Verification)**
+  Run: `pytest tests/test_sources_ready.py -v -s`  
+  Expected output: `PASSED` cho cả 2 hàm test.
 
 - [x] **Step 5: Git commit hoàn thiện Task 1**
   ```bash
-  git add tests/test_all_tables_seeded.py data_prep/seed_postgres.py
-  git commit -m "feat(data_prep): seed all 10 olist tables into postgresql for week 02 eda"
+  git add tests/test_sources_ready.py data_prep/seed_postgres.py data_prep/upload_to_landing.py
+  git commit -m "feat(infra): enforce enterprise multi-source boundary: 5 postgres tables + 5 minio landing csv files"
   ```
 
-#### 🧪 Mini-Lab 1: Soi Kính — Xác Nhận Dữ Liệu 10 Bảng
-* **Mục tiêu:** Kiểm tra kích thước và số dòng của 10 bảng trong PostgreSQL bằng câu lệnh SQL hệ thống.
+#### 🧪 Mini-Lab 1: Soi Kính — Xác Nhận Ranh Giới Hai Nguồn
+* **Mục tiêu:** Kiểm tra danh sách bảng trong Postgres chỉ có 5 bảng và MinIO bucket landing có đủ 5 file.
 * **Thao tác nhanh:**
   ```bash
-  docker exec -i olist_postgres psql -U postgres -d postgres -c "
-  SELECT table_name, pg_size_pretty(pg_total_relation_size(quote_ident(table_name))) AS table_size 
-  FROM information_schema.tables 
-  WHERE table_schema = 'public' 
-  ORDER BY table_name;"
+  docker exec -i olist_postgres psql -U postgres.iuvjhphnqpekptjzsifm -d postgres -c "\\dt"
+  python3 -c "import boto3; s3=boto3.client('s3', endpoint_url='http://localhost:9000', aws_access_key_id='minioadmin', aws_secret_access_key='minioadmin'); print([obj['Key'] for obj in s3.list_objects_v2(Bucket='landing').get('Contents', [])])"
   ```
-* **Tiêu chuẩn đạt:** Thấy đủ 10 bảng hiển thị kèm dung lượng.
+* **Tiêu chuẩn đạt:** Postgres chỉ có 5 bảng, MinIO landing có đủ 5 keys.
 
 ---
 
@@ -344,56 +361,29 @@ olist-lakehouse/
   Tạo tệp `tests/test_requirements_spec.py`:
   ```python
   # tests/test_requirements_spec.py
-  \"\"\"
-  Test kiểm tra định dạng tài liệu requirements.md theo tiêu chuẩn Agile/User Story.
-  Mỗi User Story phải có Acceptance Criteria đo lường được (Given-When-Then).
-  Tác giả: Anh Tú (Pedagogical Approach)
-  \"\"\"
   import os
 
   def test_requirements_document():
       path = "docs/week02/requirements.md"
       assert os.path.exists(path), f"File {path} không tồn tại!"
-      
       content = open(path, "r", encoding="utf-8").read()
       assert len(content) > 1000, "Nội dung requirements.md quá ngắn!"
-      
-      # Kiểm tra có đủ 3 bài toán nghiệp vụ theo syllabus
       assert "US-01" in content and "Doanh thu" in content, "Thiếu User Story 01: Doanh thu"
-      assert "US-02" in content and "LTV" in content, "Thiếu User Story 02: LTV (Customer Lifetime Value)"
-      assert "US-03" in content and "RFM" in content, "Thiếu User Story 03: Phân khúc RFM"
-      
-      # Kiểm tra cấu trúc chuẩn Acceptance Criteria
-      assert "Given" in content and "When" in content and "Then" in content, "Acceptance Criteria phải viết theo chuẩn Given-When-Then!"
-      assert "Made by Anh Tu - Share to be share" in content, "Thiếu footer bản quyền tác giả Anh Tú"
+      assert "US-02" in content and "LTV" in content, "Thiếu User Story 02: LTV"
+      assert "US-03" in content and "RFM" in content, "Thiếu User Story 03: RFM"
+      assert "Given" in content and "When" in content and "Then" in content, "Acceptance Criteria phải theo chuẩn Given-When-Then!"
+      assert "Made by Anh Tu - Share to be share" in content, "Thiếu footer bản quyền!"
   ```
 
 - [ ] **Step 2: Chạy test để xác nhận test thất bại**
   Run: `pytest tests/test_requirements_spec.py -v`  
-  Expected output: `FAIL` với lỗi `File docs/week02/requirements.md không tồn tại!`.
+  Expected output: `FAIL` do file chưa tồn tại.
 
 - [ ] **Step 3: Biên soạn tài liệu `docs/week02/requirements.md`**
-  Tạo file `docs/week02/requirements.md` bao gồm chi tiết 3 User Stories với công thức tính KPI rõ ràng:
-  1. **US-01: Báo cáo Doanh thu Đa Chiều (Revenue Analytics by Time, Category, Seller)**
-     - *Vai trò:* Là Giám đốc Kinh doanh (Sales Director).
-     - *Mục tiêu:* Xem báo cáo doanh thu gộp (Gross Merchandise Value - GMV), doanh thu thuần (Net Sales), phí ship theo từng tháng, ngành hàng và người bán.
-     - *Acceptance Criteria (Given-When-Then):*
-       - **AC1:** Given một khoảng thời gian đặt hàng (order_purchase_timestamp), When lọc theo trạng thái `order_status = 'delivered'`, Then tổng doanh thu = `SUM(price)`.
-       - **AC2:** Given một đơn hàng có nhiều mặt hàng từ nhiều người bán, When tính doanh thu người bán, Then mỗi mặt hàng được phân bổ chính xác về đúng `seller_id`.
-  2. **US-02: Phân Tích Giá Trị Vòng Đời Khách Hàng (Customer Lifetime Value - LTV)**
-     - *Vai trò:* Là Trưởng phòng Tiếp thị Tăng trưởng (Growth Marketing Lead).
-     - *Mục tiêu:* Đo lường LTV theo từng nhóm thuần tập (Cohort) dựa trên tháng mua hàng đầu tiên của khách.
-     - *Acceptance Criteria:*
-       - **AC1:** Given tập dữ liệu khách hàng, When nhóm các đơn hàng của cùng một người, Then hệ thống PHẢI dùng `customer_unique_id` (định danh người thực), TUYỆT ĐỐI KHÔNG dùng `customer_id` (mã giao dịch đơn lẻ).
-       - **AC2:** Given khách hàng thực hiện nhiều đơn hàng, Then `LTV = SUM(order_items.price + freight_value)`.
-  3. **US-03: Phân Khúc Khách Hàng Tự Động Theo Mô Hình RFM (Recency - Frequency - Monetary)**
-     - *Vai trò:* Là Chuyên viên Phân tích Dữ liệu Khách hàng (CRM Analyst).
-     - *Mục tiêu:* Phân loại khách hàng thành các nhóm: *VIP (Champions), Khách hàng tiềm năng (Loyal), Nguy cơ rời bỏ (At-Risk), Rời bỏ (Lost)*.
-     - *Acceptance Criteria:*
-       - **AC1 (Recency):** Số ngày tính từ lần đặt hàng thành công cuối cùng đến ngày mốc phân tích.
-       - **AC2 (Frequency):** Tổng số đơn hàng độc lập (`COUNT(DISTINCT order_id)`) của `customer_unique_id`.
-       - **AC3 (Monetary):** Tổng giá trị chi tiêu tích lũy của khách hàng.
-       - **AC4:** Điểm số RFM chia từ 1-5 theo phân vị (quintiles - `NTILE(5)`).
+  Tạo `docs/week02/requirements.md` với 3 User Stories:
+  - **US-01:** Báo cáo Doanh thu Đa Chiều (Doanh thu gộp GMV, thuần, phí ship theo tháng, ngành hàng, người bán).
+  - **US-02:** Giá trị vòng đời khách hàng LTV theo Cohort (Phân biệt sống còn giữa `customer_id` và `customer_unique_id`).
+  - **US-03:** Phân khúc RFM tự động theo phân vị (Recency, Frequency, Monetary).
 
 - [ ] **Step 4: Chạy test xác nhận tài liệu đạt chuẩn**
   Run: `pytest tests/test_requirements_spec.py -v`  
@@ -406,16 +396,11 @@ olist-lakehouse/
   ```
 
 #### 🧪 Mini-Lab 2: Soi Kính — Thẩm Định Yêu Cầu Nghiệp Vụ
-* **Mục tiêu:** Đảm bảo mọi Acceptance Criteria đều có thể kiểm thử được bằng SQL.
-* **Thao tác nhanh:**
-  ```bash
-  grep -E "(Given|When|Then)" docs/week02/requirements.md
-  ```
-* **Tiêu chuẩn đạt:** Hiển thị tối thiểu 6 cặp Given-When-Then cho 3 bài toán nghiệp vụ.
+* **Thao tác nhanh:** `grep -E "(Given|When|Then)" docs/week02/requirements.md`
 
 ---
 
-### Task 3: Xây Dựng EDA Profiling Notebook Cho 10 Bảng Olist
+### Task 3: Xây Dựng EDA Profiling Notebook Cho Cả 2 Nguồn Dữ Liệu (Postgres & MinIO Landing)
 **Phụ thuộc:** Task 1  
 **WBS:** WP2.3 | **Syllabus:** Bước 2 Lab M1  
 **Files:**
@@ -427,398 +412,122 @@ olist-lakehouse/
   Tạo `tests/test_eda_profiling.py`:
   ```python
   # tests/test_eda_profiling.py
-  \"\"\"
-  Test kiểm tra script/notebook EDA Profiling đã tính toán đầy đủ các chỉ số:
-  row count, % null, distinct count, min/max cho toàn bộ 10 bảng Olist.
-  Tác giả: Anh Tú (Pedagogical Approach)
-  \"\"\"
-  import os
-  import json
+  import os, json
 
   def test_eda_notebook_and_output():
       nb_path = "notebooks/eda_profiling.ipynb"
       summary_path = "docs/week02/eda_summary.json"
-      
       assert os.path.exists(nb_path), f"Notebook {nb_path} chưa được tạo!"
-      assert os.path.exists(summary_path), f"File tổng hợp số liệu {summary_path} chưa được tạo!"
+      assert os.path.exists(summary_path), f"Summary {summary_path} chưa được tạo!"
       
       with open(summary_path, "r", encoding="utf-8") as f:
           data = json.load(f)
           
-      expected_tables = [
+      expected_entities = [
           "orders", "order_items", "order_payments", "customers", "customer_pii",
           "products", "sellers", "order_reviews", "geolocation", "product_category_name_translation"
       ]
-      
-      for t in expected_tables:
-          assert t in data, f"Thiếu thông tin profiling của bảng '{t}' trong summary!"
-          info = data[t]
+      for e in expected_entities:
+          assert e in data, f"Thiếu thông tin profiling của '{e}' trong summary!"
+          info = data[e]
+          assert "source_type" in info, f"Thiếu nguồn lưu trữ (PostgreSQL / MinIO_Landing) cho '{e}'!"
           assert "row_count" in info and info["row_count"] > 0
-          assert "columns" in info and len(info["columns"]) > 0
-          # Kiểm tra cấu trúc từng cột
           for col, stats in info["columns"].items():
-              assert "null_pct" in stats, f"Cột {col} thiếu chỉ số null_pct"
-              assert "distinct_count" in stats, f"Cột {col} thiếu chỉ số distinct_count"
+              assert "null_pct" in stats and "distinct_count" in stats
   ```
 
 - [ ] **Step 2: Chạy test để xác nhận test thất bại**
   Run: `pytest tests/test_eda_profiling.py -v`  
-  Expected output: `FAIL` do các file chưa tồn tại.
+  Expected output: `FAIL`.
 
-- [ ] **Step 3: Xây dựng script profiling tự động và sinh Jupyter Notebook**
+- [ ] **Step 3: Xây dựng script profiling tự động kết nối cả 2 nguồn và sinh Jupyter Notebook**
   Tạo `scripts/run_eda_profiling.py`:
-  ```python
-  # scripts/run_eda_profiling.py
-  \"\"\"
-  Script tự động kết nối PostgreSQL, phân tích thống kê 10 bảng Olist
-  và kết xuất dữ liệu tóm tắt ra docs/week02/eda_summary.json.
-  Tác giả: Anh Tú (Pedagogical Approach)
-  \"\"\"
-  import os
-  import json
-  import psycopg2
-  from dotenv import load_dotenv
-
-  load_dotenv()
-
-  def profile_database():
-      conn = psycopg2.connect(
-          host=os.getenv("POSTGRES_HOST", "localhost"),
-          port=int(os.getenv("POSTGRES_PORT", 5432)),
-          user=os.getenv("POSTGRES_USER", "postgres"),
-          password=os.getenv("POSTGRES_PASSWORD", "olist-lakehouse"),
-          dbname=os.getenv("POSTGRES_DB", "postgres")
-      )
-      cur = conn.cursor()
-      
-      tables = [
-          "orders", "order_items", "order_payments", "customers", "customer_pii",
-          "products", "sellers", "order_reviews", "geolocation", "product_category_name_translation"
-      ]
-      
-      summary = {}
-      for t in tables:
-          print(f"📊 Đang phân tích bảng: {t}...")
-          cur.execute(f"SELECT COUNT(*) FROM {t};")
-          row_count = cur.fetchone()[0]
-          
-          cur.execute(f\"\"\"
-              SELECT column_name, data_type 
-              FROM information_schema.columns 
-              WHERE table_schema = 'public' AND table_name = '{t}';
-          \"\"\")
-          cols = cur.fetchall()
-          
-          col_stats = {}
-          for col_name, dtype in cols:
-              cur.execute(f\"\"\"
-                  SELECT 
-                      COUNT(*) - COUNT({col_name}) AS null_count,
-                      COUNT(DISTINCT {col_name}) AS distinct_count
-                  FROM {t};
-              \"\"\")
-              null_cnt, dist_cnt = cur.fetchone()
-              null_pct = round((null_cnt / row_count * 100), 2) if row_count > 0 else 0.0
-              col_stats[col_name] = {
-                  "data_type": dtype,
-                  "null_count": null_cnt,
-                  "null_pct": null_pct,
-                  "distinct_count": dist_cnt
-              }
-          summary[t] = {
-              "row_count": row_count,
-              "column_count": len(cols),
-              "columns": col_stats
-          }
-      
-      os.makedirs("docs/week02", exist_ok=True)
-      with open("docs/week02/eda_summary.json", "w", encoding="utf-8") as f:
-          json.dump(summary, f, indent=2, ensure_ascii=False)
-      print("✔ Đã lưu kết quả profiling ra docs/week02/eda_summary.json")
-      
-      # Sinh tệp notebook cơ bản
-      os.makedirs("notebooks", exist_ok=True)
-      nb_content = {
-          "cells": [
-              {
-                  "cell_type": "markdown",
-                  "metadata": {},
-                  "source": [
-                      "# Olist Lakehouse — Exploratory Data Analysis (EDA) Profiling\\n",
-                      "> Tác giả: Anh Tú (Pedagogical Approach)\\n",
-                      "Notebook phân tích thống kê 10 bảng dữ liệu Olist phục vụ thiết kế Data Pipeline."
-                  ]
-              },
-              {
-                  "cell_type": "code",
-                  "execution_count": None,
-                  "metadata": {},
-                  "outputs": [],
-                  "source": [
-                      "import pandas as pd\\n",
-                      "import json\\n",
-                      "with open('../docs/week02/eda_summary.json') as f:\\n",
-                      "    summary = json.load(f)\\n",
-                      "df_overview = pd.DataFrame([\\n",
-                      "    {'table': t, 'row_count': info['row_count'], 'col_count': info['column_count']}\\n",
-                      "    for t, info in summary.items()\\n",
-                      "])\\n",
-                      "display(df_overview)"
-                  ]
-              }
-          ],
-          "metadata": {
-              "language_info": {"name": "python"}
-          },
-          "nbformat": 4,
-          "nbformat_minor": 2
-      }
-      with open("notebooks/eda_profiling.ipynb", "w", encoding="utf-8") as f:
-          json.dump(nb_content, f, indent=2)
-      print("✔ Đã khởi tạo Jupyter Notebook notebooks/eda_profiling.ipynb")
-
-  if __name__ == "__main__":
-      profile_database()
-  ```
+  - 5 bảng transactional: Kết nối PostgreSQL qua SQLAlchemy engine để query và profiling.
+  - 5 tệp CSV: Kết nối MinIO landing bucket qua S3 (hoặc đọc trực tiếp từ `data_prep/raw/`) bằng pandas/PyArrow.
+  - Lưu kết quả profiling chi tiết ra `docs/week02/eda_summary.json` (kèm gắn nhãn `source_type: "PostgreSQL"` hoặc `source_type: "MinIO_Landing"`).
+  - Tự động sinh `notebooks/eda_profiling.ipynb`.
 
 - [ ] **Step 4: Chạy script profiling và xác thực test**
   Run: `python scripts/run_eda_profiling.py`  
   Run: `pytest tests/test_eda_profiling.py -v`  
-  Expected output: `PASSED` với 10/10 bảng được profile chi tiết.
+  Expected output: `PASSED` với đầy đủ 10 thực thể được profile từ 2 nguồn riêng biệt.
 
 - [ ] **Step 5: Git commit hoàn thiện Task 3**
   ```bash
   git add scripts/run_eda_profiling.py notebooks/eda_profiling.ipynb docs/week02/eda_summary.json tests/test_eda_profiling.py
-  git commit -m "feat(eda): implement automated profiling for all 10 olist tables"
+  git commit -m "feat(eda): implement multi-source automated profiling for postgresql and minio landing"
   ```
 
-#### 🧪 Mini-Lab 3: Soi Kính — Đọc Bảng Thống Kê Tổng Quan
-* **Mục tiêu:** Xem nhanh tỷ lệ NULL và số lượng dòng của các bảng quan trọng từ kết quả profiling.
-* **Thao tác nhanh:**
-  ```bash
-  python3 -c "
-  import json
-  with open('docs/week02/eda_summary.json') as f:
-      data = json.load(f)
-  print(f'{\"Table\":<35} | {\"Rows\":>10} | {\"Columns\":>8}')
-  print('-'*60)
-  for t, v in data.items():
-      print(f'{t:<35} | {v[\"row_count\"]:>10,} | {v[\"column_count\"]:>8}')
-  "
-  ```
-* **Tiêu chuẩn đạt:** In ra bảng tổng quan số dòng và cột của 10 bảng.
+#### 🧪 Mini-Lab 3: Soi Kính — Đọc Bảng Thống Kê 2 Nguồn
+* **Mục tiêu:** Kiểm tra bảng thống kê phân định rõ nguồn PostgreSQL và MinIO Landing.
 
 ---
 
-### Task 4: Phân Tích EDA Quan Hệ & Báo Cáo ≥5 Phát Hiện Kỹ Thuật (Relational Findings)
+### Task 4: Phân Tích EDA Quan Hệ & Báo Cáo ≥5 Phát Hiện Kỹ Thuật (Cross-Source Relational Findings)
 **Phụ thuộc:** Task 1, Task 3  
 **WBS:** WP2.4 | **Syllabus:** Bước 3 Lab M1  
 **Files:**
 - Create: `docs/week02/eda_report.md`
 - Test: `tests/test_eda_findings.py`
 
-- [ ] **Step 1: Viết test kiểm tra 5 phát hiện quan hệ bằng câu truy vấn SQL thực tế (Failing Test)**
+- [ ] **Step 1: Viết test kiểm tra 5 phát hiện quan hệ (Failing Test)**
   Tạo `tests/test_eda_findings.py`:
-  ```python
-  # tests/test_eda_findings.py
-  \"\"\"
-  Test tự động kiểm chứng 5 phát hiện quan hệ (Relational Findings) trong bộ dữ liệu Olist.
-  Mỗi test case chạy SQL trực tiếp trên PostgreSQL để chứng minh con số thực tế.
-  Tác giả: Anh Tú (Pedagogical Approach)
-  \"\"\"
-  import os
-  import psycopg2
-  from dotenv import load_dotenv
+  Kiểm chứng 5 phát hiện với số liệu đo đạc thực tế:
+  1. **Finding 1 (Postgres):** `customer_id` bị thổi phồng so với `customer_unique_id` (99,441 vs 96,096 ~ chênh lệch 3.35%).
+  2. **Finding 2 (Cross-Source):** `order_items` trong Postgres có `product_id` không tồn tại trong `products` (MinIO Landing) -> Khoảng cách tham chiếu giữa 2 nguồn!
+  3. **Finding 3 (Postgres):** Đơn hàng thanh toán nhiều lần/nhiều phương thức (`order_payments` có đơn lên tới 29 voucher).
+  4. **Finding 4 (Postgres):** Tỷ lệ đơn giao trễ so với dự kiến (~6.7% đơn giao sau `order_estimated_delivery_date`).
+  5. **Finding 5 (MinIO Landing):** Tọa độ trùng lặp trong `geolocation` (19k zip codes nhưng có 1 triệu dòng GPS).
 
-  load_dotenv()
-
-  def get_conn():
-      return psycopg2.connect(
-          host=os.getenv("POSTGRES_HOST", "localhost"),
-          port=int(os.getenv("POSTGRES_PORT", 5432)),
-          user=os.getenv("POSTGRES_USER", "postgres"),
-          password=os.getenv("POSTGRES_PASSWORD", "olist-lakehouse"),
-          dbname=os.getenv("POSTGRES_DB", "postgres")
-      )
-
-  def test_finding_1_customer_id_inflation():
-      \"\"\"Finding 1: Số lượng customer_id lớn hơn customer_unique_id (Customer Inflation)\"\"\"
-      conn = get_conn()
-      cur = conn.cursor()
-      cur.execute(\"\"\"
-          SELECT COUNT(customer_id), COUNT(DISTINCT customer_unique_id) 
-          FROM customers;
-      \"\"\")
-      total_cid, unique_cuid = cur.fetchone()
-      conn.close()
-      assert total_cid > unique_cuid, "customer_id phải lớn hơn customer_unique_id!"
-      diff = total_cid - unique_cuid
-      pct = round(diff / total_cid * 100, 2)
-      print(f"\\n✔ Finding 1 Verified: {total_cid:,} customer_id vs {unique_cuid:,} unique_id (Lệch {diff:,} dòng ~ {pct}%)")
-
-  def test_finding_2_missing_product_category():
-      \"\"\"Finding 2: Tồn tại sản phẩm bị thiếu danh mục (NULL product_category_name)\"\"\"
-      conn = get_conn()
-      cur = conn.cursor()
-      cur.execute(\"\"\"
-          SELECT COUNT(*), COUNT(product_category_name) 
-          FROM products;
-      \"\"\")
-      total_p, non_null_cat = cur.fetchone()
-      conn.close()
-      null_cat = total_p - non_null_cat
-      null_pct = round(null_cat / total_p * 100, 2)
-      assert null_cat > 0, "Phải có sản phẩm bị NULL category!"
-      print(f"\\n✔ Finding 2 Verified: Có {null_cat:,} / {total_p:,} sản phẩm NULL category ({null_pct}%)")
-
-  def test_finding_3_multi_payment_orders():
-      \"\"\"Finding 3: Tồn tại các đơn hàng thanh toán qua nhiều phương thức/nhiều lần\"\"\"
-      conn = get_conn()
-      cur = conn.cursor()
-      cur.execute(\"\"\"
-          SELECT COUNT(*) FROM (
-              SELECT order_id FROM order_payments 
-              GROUP BY order_id HAVING COUNT(*) > 1
-          ) sub;
-      \"\"\")
-      multi_pay_count = cur.fetchone()[0]
-      conn.close()
-      assert multi_pay_count > 0, "Phải có đơn hàng có > 1 lần thanh toán!"
-      print(f"\\n✔ Finding 3 Verified: Có {multi_pay_count:,} đơn hàng thanh toán đa phương thức/nhiều lần")
-
-  def test_finding_4_late_delivery_orders():
-      \"\"\"Finding 4: Tồn tại đơn hàng bị giao trễ so với ngày dự kiến giao hàng\"\"\"
-      conn = get_conn()
-      cur = conn.cursor()
-      cur.execute(\"\"\"
-          SELECT COUNT(*) 
-          FROM orders 
-          WHERE order_status = 'delivered' 
-            AND order_delivered_customer_date > order_estimated_delivery_date;
-      \"\"\")
-      late_count = cur.fetchone()[0]
-      conn.close()
-      assert late_count > 0, "Phải có đơn hàng giao trễ!"
-      print(f"\\n✔ Finding 4 Verified: Có {late_count:,} đơn hàng giao trễ so với dự kiến")
-
-  def test_finding_5_geolocation_duplicates():
-      \"\"\"Finding 5: Một mã zip_code_prefix có nhiều cặp tọa độ lat/long khác nhau\"\"\"
-      conn = get_conn()
-      cur = conn.cursor()
-      cur.execute(\"\"\"
-          SELECT COUNT(DISTINCT geolocation_zip_code_prefix), COUNT(*) 
-          FROM geolocation;
-      \"\"\")
-      distinct_zips, total_geo = cur.fetchone()
-      conn.close()
-      assert total_geo > distinct_zips, "Bảng geolocation phải có nhiều dòng trùng lặp zip_code_prefix!"
-      print(f"\\n✔ Finding 5 Verified: {distinct_zips:,} distinct zip codes trên tổng {total_geo:,} dòng geolocation")
-  ```
-
-- [ ] **Step 2: Chạy test để kiểm chứng 5 phát hiện bằng SQL trực tiếp**
+- [ ] **Step 2: Chạy test xác nhận**
   Run: `pytest tests/test_eda_findings.py -v -s`  
   Expected output: `PASSED` với 5 dòng thông báo số liệu thực tế được in ra.
 
 - [ ] **Step 3: Soạn thảo báo cáo kỹ thuật `docs/week02/eda_report.md`**
-  Tạo `docs/week02/eda_report.md` trình bày chi tiết 5 phát hiện theo cấu trúc sư phạm chuẩn:
-  * **Hiện tượng & Số liệu định lượng (Quantified Fact).**
-  * **Nguyên nhân gốc rễ (Root Cause Analysis - Tại sao hệ thống nguồn lại như vậy?).**
-  * **Tác động nghiệp vụ (Business Impact - Nếu không xử lý sẽ sai điều gì?).**
-  * **Giải pháp thiết kế Pipeline (Pipeline Recommendation - Tầng Silver/Gold phải làm gì?).**
+  Gồm 4 phần chuẩn sư phạm: Hiện tượng định lượng ➔ Nguyên nhân gốc rễ ➔ Tác động nghiệp vụ ➔ Đề xuất giải pháp pipeline.
 
-- [ ] **Step 4: Kiểm tra tài liệu và git commit**
-  Run: `test -s docs/week02/eda_report.md && echo "eda_report.md hợp lệ"`  
+- [ ] **Step 4: Git commit hoàn thiện Task 4**
   ```bash
   git add docs/week02/eda_report.md tests/test_eda_findings.py
-  git commit -m "docs(eda): document 5 quantified relational findings with root causes and pipeline actions"
+  git commit -m "docs(eda): document 5 cross-source relational findings with root causes and pipeline actions"
   ```
 
-#### 🧪 Mini-Lab 4: Soi Kính — Đối Chiếu Số Liệu Finding
-* **Mục tiêu:** Kiểm tra nhanh số lượng đơn hàng có nhiều hơn 1 bản ghi payment trong PostgreSQL.
-* **Thao tác nhanh:**
-  ```bash
-  docker exec -i olist_postgres psql -U postgres -d postgres -c "
-  SELECT MAX(payment_sequential) AS max_payments_in_single_order 
-  FROM order_payments;"
-  ```
-* **Tiêu chuẩn đạt:** Trả về kết quả (thực tế có đơn lên tới 29 lần thanh toán bằng phiếu mua hàng/voucher).
-
+---
 
 ### Task 5: Thiết Kế Bảng Load Pattern Matrix & Xác Định Business Keys (Design Document)
 **Phụ thuộc:** Task 4  
-**WBS:** WP2.5 | **Syllabus:** Bước 4 Lab M1  
+**WBS:** WP2.5 | **Syllabus:** Bước 4 Lab M1 & 00_PROJECT_OVERVIEW  
 **Files:**
 - Create: `docs/week02/design.md`
 - Test: `tests/test_design_doc.py`
 
 - [ ] **Step 1: Viết test kiểm tra tính toàn diện của tài liệu thiết kế (Failing Test)**
   Tạo `tests/test_design_doc.py`:
-  ```python
-  # tests/test_design_doc.py
-  \"\"\"
-  Test kiểm tra tài liệu design.md bao quát đầy đủ 10 bảng Olist,
-  chỉ định rõ ràng Load Pattern (Full, Incremental, CDC, Full-reload),
-  Business Key, Change Detection strategy và chính sách PII.
-  Tác giả: Anh Tú (Pedagogical Approach)
-  \"\"\"
-  import os
+  Kiểm tra tài liệu khớp 100% với Mục 2 của `00_PROJECT_OVERVIEW.md` về nơi đặt dữ liệu (5 bảng Postgres, 5 bảng MinIO Landing).
 
-  def test_design_document():
-      path = "docs/week02/design.md"
-      assert os.path.exists(path), f"File {path} không tồn tại!"
-      content = open(path, "r", encoding="utf-8").read()
-      
-      expected_tables = [
-          "orders", "order_items", "order_payments", "customers", "customer_pii",
-          "products", "sellers", "order_reviews", "geolocation", "product_category_name_translation"
-      ]
-      for t in expected_tables:
-          assert t in content, f"Bảng '{t}' chưa được phân tích trong design.md!"
-          
-      patterns = ["Incremental", "Full-reload", "CDC", "Append-only"]
-      assert any(p in content for p in patterns), "Thiếu phân loại Load Pattern!"
-      assert "Business Key" in content, "Thiếu định nghĩa Business Key!"
-      assert "Record Hash" in content, "Thiếu chiến lược tính Record Hash SHA-256!"
-      assert "HMAC" in content, "Thiếu quy định bảo mật PII!"
-      assert "Made by Anh Tu - Share to be share" in content, "Thiếu footer bản quyền!"
-  ```
+- [ ] **Step 2: Chạy test xác nhận lỗi**
+  Run: `pytest tests/test_design_doc.py -v`
 
-- [ ] **Step 2: Chạy test để xác nhận test thất bại**
+- [ ] **Step 3: Soạn thảo `docs/week02/design.md`**
+  | Tên Bảng Nguồn | Đặt ở đâu | Khối Lượng | Khóa Nghiệp Vụ | Load Pattern | Watermark Column | Chiến Lược Bắt Thay Đổi | Độ Nhạy Cảm |
+  |:---|:---|:---|:---|:---|:---|:---|:---|
+  | `orders` | **PostgreSQL** | ~99,441 | `order_id` | **Incremental** | `updated_at` | Record Hash SHA-256 | Internal |
+  | `order_items` | **PostgreSQL** | ~112,650 | `order_id, order_item_id` | **Append-only Incremental** | `shipping_limit_date` / `updated_at` | Composite Business Key | Internal |
+  | `order_payments` | **PostgreSQL** | ~103,886 | `order_id, payment_sequential` | **Append-only Incremental** | `updated_at` | Composite Business Key | Financial |
+  | `customers` | **PostgreSQL** | ~99,441 | `customer_id` | **CDC / SCD2** | `updated_at` | Record Hash trên địa chỉ | Internal |
+  | `customer_pii` | **PostgreSQL** | ~96,096 | `customer_unique_id` | **CDC / SCD2** | `updated_at` | HMAC-SHA256 Masking | **PII-Restricted** |
+  | `products` | **MinIO Landing** | ~32,951 | `product_id` | **Full snapshot** | File upload ts | Record Hash SHA-256 | Public |
+  | `sellers` | **MinIO Landing** | ~3,095 | `seller_id` | **Full snapshot** | File upload ts | Record Hash | Public |
+  | `order_reviews` | **MinIO Landing** | ~100,000 | `review_id, order_id` | **Incremental theo file** | Batch file key | Composite Key | Public |
+  | `geolocation` | **MinIO Landing** | ~1,000,163 | `geolocation_zip_code_prefix` | **Full reload** | File upload ts | Khử trùng & trung bình hóa GPS | Public |
+  | `product_category_name_translation` | **MinIO Landing** | ~71 | `product_category_name` | **Full reload** | N/A | Static lookup table | Public |
+
+- [ ] **Step 4: Chạy test xác nhận và commit**
   Run: `pytest tests/test_design_doc.py -v`  
-  Expected output: `FAIL` do `docs/week02/design.md` chưa tồn tại.
-
-- [ ] **Step 3: Soạn thảo tài liệu thiết kế kiến trúc `docs/week02/design.md`**
-  Tạo `docs/week02/design.md` chứa ma trận nạp dữ liệu chuẩn xác cho 10 bảng:
-  | Tên Bảng Nguồn | Khối Lượng Bản Ghi | Khóa Nghiệp Vụ (Business Key) | Chiến Lược Nạp (Load Pattern) | Cột Mốc Thời Gian (Watermark Column) | Chiến Lược Khử Trùng & Bắt Thay Đổi | Phân Loại Độ Nhạy Cảm |
-  |:---|:---|:---|:---|:---|:---|:---|
-  | `orders` | ~99,441 | `order_id` | **Incremental / CDC** | `updated_at` | Record Hash SHA-256 trên toàn bộ thuộc tính trạng thái | Internal |
-  | `order_items` | ~112,650 | `order_id, order_item_id` | **Append-only Incremental** | `shipping_limit_date` / `updated_at` | Composite Business Key + Record Hash | Internal |
-  | `order_payments` | ~103,886 | `order_id, payment_sequential` | **Append-only Incremental** | `updated_at` | Composite Business Key | Financial-Confidential |
-  | `customers` | ~99,441 | `customer_id` (Surrogate: `customer_unique_id`) | **Full Reload / SCD2** | `updated_at` | Record Hash trên địa chỉ (zip, city, state) | Internal |
-  | `customer_pii` | ~96,096 | `customer_unique_id` | **Full Reload / SCD2** | `updated_at` | HMAC-SHA256 Masking trước khi vào Bronze | **PII-Restricted** |
-  | `products` | ~32,951 | `product_id` | **Full Reload / Snapshot** | N/A (Snapshot mẻ) | Record Hash SHA-256 phát hiện đổi danh mục/kích thước | Public |
-  | `sellers` | ~3,095 | `seller_id` | **Full Reload / Snapshot** | N/A (Snapshot mẻ) | Record Hash phát hiện đổi địa bàn người bán | Public |
-  | `order_reviews` | ~100,000 | `review_id, order_id` | **Append-only Incremental** | `review_creation_date` | Composite Business Key | Public |
-  | `geolocation` | ~1,000,163 | `geolocation_zip_code_prefix` | **Static Reference / Batch Reload** | N/A | Khử trùng lặp và trung bình hóa tọa độ GPS tại Silver | Public |
-  | `product_category_name_translation` | ~71 | `product_category_name` | **Static Reference / Full Overwrite** | N/A | Bảng từ điển dịch thuật cố định | Public |
-
-- [ ] **Step 4: Chạy test xác nhận tài liệu thiết kế hoàn thiện**
-  Run: `pytest tests/test_design_doc.py -v`  
-  Expected output: `PASSED`.
-
-- [ ] **Step 5: Git commit hoàn thiện Task 5**
   ```bash
   git add docs/week02/design.md tests/test_design_doc.py
-  git commit -m "docs(design): define load pattern matrix, business keys, and hash strategy for 10 tables"
+  git commit -m "docs(design): define multi-source load pattern matrix and business keys matching project overview"
   ```
-
-#### 🧪 Mini-Lab 5: Soi Kính — Kiểm Tra Ma Trận Khóa Nghiệp Vụ
-* **Mục tiêu:** Đảm bảo tất cả 10 bảng đều có Business Key duy nhất không trùng lặp.
-* **Thao tác nhanh:**
-  ```bash
-  grep -A 12 "| Tên Bảng Nguồn" docs/week02/design.md
-  ```
-* **Tiêu chuẩn đạt:** Bảng ma trận hiển thị đầy đủ thông tin của 10 bảng.
 
 ---
 
@@ -1115,7 +824,6 @@ olist-lakehouse/
   grep -E "(Fail Pipeline|Quarantine|Log Warning)" docs/week02/dq_catalog.md
   ```
 * **Tiêu chuẩn đạt:** Có đầy đủ 3 loại hành động ứng với 3 mức độ nghiêm trọng.
-
 
 ### Task 9: 5 Bài SQL Thực Hành Hằng Ngày (Daily SQL Mastery)
 **Phụ thuộc:** Task 1  
@@ -1456,9 +1164,9 @@ olist-lakehouse/
   echo "         BẮT ĐẦU TỰ ĐÁNH GIÁ CỔNG NGHIỆM THU GATE G2 (LAB M1)     "
   echo "================================================================="
   
-  # 1. Kiểm tra 10 bảng Olist đã nạp vào PostgreSQL
-  echo "✔ [1/7] Kiểm tra 10 bảng Olist trong PostgreSQL..."
-  pytest tests/test_all_tables_seeded.py -v --tb=short
+  # 1. Kiểm tra 2 nguồn dữ liệu (PostgreSQL 5 bảng + MinIO Landing 5 tệp)
+  echo "✔ [1/7] Kiểm tra 2 nguồn dữ liệu (PostgreSQL + MinIO Landing)..."
+  pytest tests/test_sources_ready.py -v --tb=short
   
   # 2. Kiểm tra tài liệu Requirements (User Stories)
   echo "✔ [2/7] Kiểm tra docs/week02/requirements.md..."
@@ -1544,7 +1252,7 @@ olist-lakehouse/
 
 3. **Tính nhất quán dữ liệu & Kiến trúc:**
    - Tái sử dụng trọn vẹn hạ tầng Docker từ Tuần 01 mà không làm thay đổi cấu hình.
-   - Nạp đủ 10 bảng Olist vào PostgreSQL để đảm bảo toàn bộ các câu SQL phân tích đều chạy được thật.
+   - Phân định rạch ròi 2 nguồn dữ liệu: 5 bảng transactional nằm trong PostgreSQL OLTP và 5 tệp CSV nằm trong MinIO Landing bucket.
 
 ---
 

@@ -39,11 +39,11 @@ def seed_database():
     start_time = time.time()
     
     print("=" * 70)
-    print("🚀 BẮT ĐẦU NẠP ĐẦY ĐỦ 10 BẢNG DỮ LIỆU OLIST VÀO POSTGRESQL (OLTP)")
+    print("🚀 BẮT ĐẦU NẠP ĐÚNG 5 BẢNG TRANSACTIONAL VÀO POSTGRESQL (OLTP)")
     print("=" * 70)
 
     # 0. Dọn dẹp sạch sẽ các bảng cũ bằng DROP TABLE ... CASCADE
-    print("\n[0/10] Dọn dẹp các bảng cũ để đảm bảo tính idempotent...")
+    print("\n[0/5] Dọn dẹp các bảng cũ để đảm bảo tính idempotent...")
     with engine.begin() as conn:
         conn.execute(text("""
             DROP TABLE IF EXISTS order_audit_logs CASCADE;
@@ -60,18 +60,13 @@ def seed_database():
         """))
     print("  ✔ Đã dọn dẹp các bảng cũ an toàn.")
 
-    # Danh mục 10 bảng nguồn Olist
+    # Danh mục 5 bảng transactional nguồn Olist trong PostgreSQL
     table_sources = [
         ("orders", "data_prep/processed/batch_B0/orders.csv"),
         ("order_items", "data_prep/processed/batch_B0/order_items.csv"),
         ("order_payments", "data_prep/processed/batch_B0/order_payments.csv"),
         ("customers", "data_prep/raw/olist_customers_dataset.csv"),
         ("customer_pii", "data_prep/processed/customer_pii.csv"),
-        ("products", "data_prep/raw/olist_products_dataset.csv"),
-        ("sellers", "data_prep/raw/olist_sellers_dataset.csv"),
-        ("order_reviews", "data_prep/raw/olist_order_reviews_dataset.csv"),
-        ("geolocation", "data_prep/raw/olist_geolocation_dataset.csv"),
-        ("product_category_name_translation", "data_prep/raw/product_category_name_translation.csv"),
     ]
 
     raw_conn = engine.raw_connection()
