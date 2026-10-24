@@ -79,11 +79,17 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
       AWS_REGION: ${AWS_REGION:-us-east-1}
+      POSTGRES_HOST: ${POSTGRES_HOST:-aws-1-ap-southeast-2.pooler.supabase.com}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres.iuvjhphnqpekptjzsifm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-olist-lakehouse}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
       - ./spark_jobs:/home/jovyan/work/spark_jobs
       - ./data_prep:/home/jovyan/work/data_prep
       - ./tests:/home/jovyan/work/tests
       - ./notebooks:/home/jovyan/work/notebooks
+      - ./docs:/home/jovyan/work/docs
       - ivy_cache:/home/jovyan/.ivy2
     depends_on:
       - polaris
