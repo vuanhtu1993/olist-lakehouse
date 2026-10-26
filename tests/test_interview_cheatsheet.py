@@ -18,7 +18,9 @@ def test_interview_cheatsheet_structure():
     assert "Made by Anh Tu - Share to be share" in content, "Thiếu footer bản quyền!"
 
 def test_modular_interview_cheatsheet_exists():
-    path = "docs/week02/08-week02-interview-cheatsheet.md"
+    path = "docs/week02/theory/08-week02-interview-cheatsheet.md"
+    if not os.path.exists(path):
+        path = "docs/week02/08-week02-interview-cheatsheet.md"
     assert os.path.exists(path), f"File {path} không tồn tại!"
     content = open(path, "r", encoding="utf-8").read()
     assert "Made by Anh Tu - Share to be share" in content

@@ -34,7 +34,9 @@ def test_all_8_modular_docs_exist():
         "08-week02-interview-cheatsheet.md",
     ]
     for mod in expected_modules:
-        mod_path = os.path.join("docs", "week02", mod)
+        mod_path = os.path.join("docs", "week02", "theory", mod)
+        if not os.path.exists(mod_path):
+            mod_path = os.path.join("docs", "week02", mod)
         assert os.path.exists(mod_path), f"File module {mod_path} không tồn tại!"
         mod_content = open(mod_path, "r", encoding="utf-8").read()
         assert "Made by Anh Tu - Share to be share" in mod_content, f"Module {mod} thiếu footer bản quyền!"
