@@ -518,7 +518,7 @@ olist-lakehouse/
 - Create: `docs/week02/eda_report.md`
 - Test: `tests/test_eda_findings.py`
 
-- [ ] **Step 1: Viết test kiểm tra 5 phát hiện quan hệ đa nguồn (Failing Test)**
+- [x] **Step 1: Viết test kiểm tra 5 phát hiện quan hệ đa nguồn (Failing Test)**
   Tạo `tests/test_eda_findings.py`:
   Kiểm chứng 5 phát hiện với số liệu đo đạc thực tế:
   1. **Finding 1 (Postgres OLTP):** `customer_id` bị thổi phồng so với `customer_unique_id` (99,441 vs 96,096 ~ chênh lệch 3.35%).
@@ -527,22 +527,22 @@ olist-lakehouse/
   4. **Finding 4 (Postgres OLTP):** Tỷ lệ đơn giao trễ so với dự kiến (~6.7% đơn giao sau `order_estimated_delivery_date`).
   5. **Finding 5 (MinIO Landing S3):** Tọa độ trùng lặp trong `geolocation` (19k zip codes nhưng có 1 triệu dòng GPS).
 
-- [ ] **Step 2: Chạy test xác nhận test thất bại**
+- [x] **Step 2: Chạy test xác nhận test thất bại**
   Run: `pytest tests/test_eda_findings.py -v -s`  
   Expected output: `FAIL` (do `docs/week02/eda_report.md` chưa được tạo).
 
-- [ ] **Step 3: Soạn thảo báo cáo kỹ thuật `docs/week02/eda_report.md`**
+- [x] **Step 3: Soạn thảo báo cáo kỹ thuật `docs/week02/eda_report.md`**
   Biên soạn tài liệu gồm 5 phát hiện, mỗi phát hiện tuân thủ 4 phần chuẩn sư phạm của Anh Tú:
   - **Hiện tượng định lượng (Quantified Evidence):** Số liệu đo đạc chính xác từ EDA.
   - **Nguyên nhân gốc rễ (Root Cause Analysis):** Bản chất thiết kế hệ thống nguồn (OLTP vs Third-party catalog).
   - **Tác động nghiệp vụ (Business Impact):** Ảnh hưởng đến báo cáo GMV, LTV, hay trải nghiệm giao vận.
   - **Giải pháp kỹ thuật Pipeline (Pipeline Action):** Hành động cụ thể ở tầng Bronze/Silver/Gold (Quarantine, Fallback SK = -1, SCD Type 2).
 
-- [ ] **Step 4: Chạy test xác nhận xanh lá**
+- [x] **Step 4: Chạy test xác nhận xanh lá**
   Run: `pytest tests/test_eda_findings.py -v -s`  
   Expected output: `PASSED` với 5 dòng thông báo số liệu thực tế được in ra.
 
-- [ ] **Step 5: Git commit hoàn thiện Task 4**
+- [x] **Step 5: Git commit hoàn thiện Task 4**
   ```bash
   git add docs/week02/eda_report.md tests/test_eda_findings.py
   git commit -m "docs(eda): document 5 cross-source relational findings with root causes and pipeline actions"
