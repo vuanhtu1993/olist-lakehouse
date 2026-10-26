@@ -557,14 +557,14 @@ olist-lakehouse/
 - Create: `docs/week02/design.md`
 - Test: `tests/test_design_doc.py`
 
-- [ ] **Step 1: Viết test kiểm tra tính toàn diện của tài liệu thiết kế (Failing Test)**
+- [x] **Step 1: Viết test kiểm tra tính toàn diện của tài liệu thiết kế (Failing Test)**
   Tạo `tests/test_design_doc.py`:
   Kiểm tra tài liệu khớp 100% với Mục 2 của `00_PROJECT_OVERVIEW.md` về nơi đặt dữ liệu (5 bảng Postgres, 5 bảng MinIO Landing).
 
-- [ ] **Step 2: Chạy test xác nhận lỗi**
+- [x] **Step 2: Chạy test xác nhận lỗi**
   Run: `pytest tests/test_design_doc.py -v`
 
-- [ ] **Step 3: Soạn thảo `docs/week02/design.md`**
+- [x] **Step 3: Soạn thảo `docs/week02/design.md`**
   | Tên Bảng Nguồn | Đặt ở đâu | Khối Lượng | Khóa Nghiệp Vụ | Load Pattern | Watermark Column | Chiến Lược Bắt Thay Đổi | Độ Nhạy Cảm |
   |:---|:---|:---|:---|:---|:---|:---|:---|
   | `orders` | **PostgreSQL** | ~99,441 | `order_id` | **Incremental** | `updated_at` | Record Hash SHA-256 | Internal |
@@ -578,7 +578,7 @@ olist-lakehouse/
   | `geolocation` | **MinIO Landing** | ~1,000,163 | `geolocation_zip_code_prefix` | **Full reload** | File upload ts | Khử trùng & trung bình hóa GPS | Public |
   | `product_category_name_translation` | **MinIO Landing** | ~71 | `product_category_name` | **Full reload** | N/A | Static lookup table | Public |
 
-- [ ] **Step 4: Chạy test xác nhận và commit**
+- [x] **Step 4: Chạy test xác nhận và commit**
   Run: `pytest tests/test_design_doc.py -v`  
   ```bash
   git add docs/week02/design.md tests/test_design_doc.py
